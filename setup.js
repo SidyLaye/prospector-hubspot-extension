@@ -38,9 +38,19 @@ async function testConnection() {
   showAlert('info', 'Vérification en cours...');
 
   try {
-    const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    // HubSpot accepte Bearer token ET hapikey selon le type de clé
+    const isLegacy = !token.startsWith('pat-');
+    const headers = isLegacy
+      ? { 'Authorization': 'Bearer ' + token }
+      : { 'Authorization': 'Bearer ' + token };
+
+    // Essayer d'abord avec Bearer
+    let res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', { headers });
+
+    // Si 401, essayer avec hapikey (format legacy)
+    if (res.status === 401 && isLegacy) {
+      res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1&hapikey=' + token);
+    }
 
     const data = await res.json();
 
@@ -55,7 +65,7 @@ async function testConnection() {
       input.classList.add('err');
       connectionOk = false;
       let msg = data.message || ('Erreur ' + res.status);
-      if (res.status === 401) msg = 'Token invalide — vérifie que tu as copié la clé complète.';
+      if (res.status === 401) msg = 'Clé refusée par HubSpot. Il faut un token PAT (pas la clé d\'accès personnelle). Va dans Applications héritées → crée une app → copie le token pat-eu1-...';
       if (res.status === 403) msg = 'Permissions insuffisantes — scope contacts.read et contacts.write requis.';
       showAlert('err', msg);
     }
