@@ -245,11 +245,14 @@
     for (const h of headers) {
       if (!h) continue;
       if (COL.skip.test(h)) continue;
+      // Utiliser search() pour matcher les headers composés (ex: "Date RDV")
       if (COL.firstname.test(h) || COL.lastname.test(h)) score += 3;
-      if (COL.company.test(h)) score += 2;
-      if (COL.email.test(h) || COL.phone.test(h)) score += 2;
-      if (COL.status.test(h) || COL.date.test(h)) score += 1;
-      if (COL.jobtitle.test(h)) score += 1;
+      else if (/prénom|prenom|firstname|forename/i.test(h)) score += 3;
+      else if (/^nom$|lastname|surname/i.test(h)) score += 3;
+      if (COL.company.test(h) || /entreprise|company|société|societe/i.test(h)) score += 2;
+      if (COL.email.test(h) || /email|e-mail|mail/i.test(h)) score += 2;
+      if (COL.phone.test(h) || /téléphone|telephone|mobile/i.test(h)) score += 2;
+      if (/date|rdv|rendez.?vous|statut|status|intérêt|interet/i.test(h)) score += 1;
     }
     return score;
   }
@@ -258,16 +261,17 @@
     const map = { firstname:-1, lastname:-1, fullname:-1, company:-1, email:-1, phone:-1, jobtitle:-1, status:-1, date:-1, extra:[] };
     headers.forEach((h, i) => {
       if (!h || COL.skip.test(h)) return;
-      if (map.firstname === -1 && COL.firstname.test(h)) map.firstname = i;
-      else if (map.lastname === -1 && COL.lastname.test(h)) map.lastname = i;
-      else if (map.fullname === -1 && /^(nom.?complet|full.?name|contact|name)$/i.test(h)) map.fullname = i;
-      else if (map.company === -1 && COL.company.test(h)) map.company = i;
-      else if (map.email === -1 && COL.email.test(h)) map.email = i;
-      else if (map.phone === -1 && COL.phone.test(h)) map.phone = i;
-      else if (map.jobtitle === -1 && COL.jobtitle.test(h)) map.jobtitle = i;
-      else if (map.status === -1 && COL.status.test(h)) map.status = i;
-      else if (map.date === -1 && COL.date.test(h)) map.date = i;
-      else if (h) map.extra.push({ label: h, index: i });
+      // Utiliser search() pour les headers multi-mots comme "Date RDV"
+      if (map.firstname === -1 && /prénom|prenom|firstname|forename|first.?name/i.test(h)) map.firstname = i;
+      else if (map.lastname === -1 && /^nom$|^lastname$|last.?name|surname|^name$/i.test(h)) map.lastname = i;
+      else if (map.fullname === -1 && /nom.?complet|full.?name/i.test(h)) map.fullname = i;
+      else if (map.company === -1 && /entreprise|company|société|societe|raison.?sociale|organization/i.test(h)) map.company = i;
+      else if (map.email === -1 && /^email$|^e-mail$|^mail$|^courriel$/i.test(h)) map.email = i;
+      else if (map.phone === -1 && /téléphone|telephone|^phone$|^tel$|mobile|portable/i.test(h)) map.phone = i;
+      else if (map.jobtitle === -1 && /^titre$|^title$|^poste$|fonction|^rôle$|^role$/i.test(h)) map.jobtitle = i;
+      else if (map.status === -1 && /^statut$|^status$|intérêt|interet|interest|niveau|^level$/i.test(h)) map.status = i;
+      else if (map.date === -1 && /date|rdv|rendez.?vous|appointment/i.test(h)) map.date = i;
+      else if (h && !/bilan|action|modifier|edit/i.test(h)) map.extra.push({ label: h, index: i });
     });
     return map;
   }
