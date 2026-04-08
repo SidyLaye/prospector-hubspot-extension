@@ -1,406 +1,380 @@
-// src/content.js — Prospector Universal Detector
-// Détecte les listes de prospects sur n'importe quelle page web
-
-(function() {
+// content.js — Prospector Universal Detector v2
+;(function() {
   'use strict';
-
-  // Éviter double injection
   if (window.__prospectorInjected) return;
   window.__prospectorInjected = true;
 
-  // ── Constantes ──────────────────────────────────────────────────────────────
+  const api = (typeof browser !== 'undefined') ? browser : chrome;
 
-  const NAME_PATTERNS = [
-    /^(prénom|prenom|firstname|first.?name|given.?name|forename)$/i,
-    /^(nom|lastname|last.?name|surname|family.?name)$/i,
-    /^(nom.?complet|full.?name|contact.?name|name|nom.?contact)$/i,
-  ];
+  // ── Patterns de colonnes ───────────────────────────────────────────────────
 
-  const COMPANY_PATTERNS = [
-    /^(entreprise|company|société|societe|organization|organisation|raison.?sociale|firm|business)$/i,
-  ];
+  const COL = {
+    firstname: /^(prénom|prenom|firstname|first.?name|forename|given)$/i,
+    lastname:  /^(nom|lastname|last.?name|surname|family|nom.?complet|full.?name|contact|name)$/i,
+    company:   /^(entreprise|company|société|societe|organization|raison.?sociale|firm|business|account)$/i,
+    email:     /^(email|e-mail|mail|courriel)$/i,
+    phone:     /^(téléphone|telephone|phone|tel|mobile|portable|gsm)$/i,
+    jobtitle:  /^(titre|title|poste|fonction|rôle|role|job|position|civilité|civilite)$/i,
+    status:    /^(statut|status|état|etat|stage|phase|niveau|level|intérêt|interet|interest)$/i,
+    date:      /^(date|rdv|rendez.?vous|appointment|meeting|created|updated)$/i,
+    skip:      /^(action|actions|modifier|edit|delete|supprimer|bilan|option|select|#|checkbox|check)$/i,
+  };
 
-  const EMAIL_PATTERNS = [
-    /^(email|e-mail|mail|courriel|adresse.?mail|contact.?email)$/i,
-  ];
+  // ── Pagination ─────────────────────────────────────────────────────────────
 
-  const PHONE_PATTERNS = [
-    /^(téléphone|telephone|phone|tel|mobile|portable|gsm|numero|numéro)$/i,
-  ];
-
-  const TITLE_PATTERNS = [
-    /^(titre|title|civilité|civilite|salutation|mr|mme|gender)$/i,
-  ];
-
-  const STATUS_PATTERNS = [
-    /^(statut|status|état|etat|stage|phase|qualification|level|niveau)$/i,
-  ];
-
-  const DATE_PATTERNS = [
-    /^(date|rdv|rendez.?vous|appointment|meeting|created|créé|updated|modifié)$/i,
-  ];
-
-  const SKIP_COLUMNS = [
-    /^(action|actions|modifier|edit|delete|supprimer|bilan|option|select|#|id|ref)$/i,
-  ];
-
-  // ── Pagination helper ────────────────────────────────────────────────────────
-
-  function findPaginationElements() {
-    // Boutons next/suivant courants
-    const nextSelectors = [
-      'button[aria-label*="next" i]',
-      'button[aria-label*="suivant" i]',
-      'a[aria-label*="next" i]',
-      'a[aria-label*="suivant" i]',
-      '[class*="next"]:not([disabled])',
-      '[class*="suivant"]:not([disabled])',
-      '[data-page="next"]',
-      '.pagination .next:not(.disabled)',
-      '.pagination-next:not(.disabled)',
-      'li.next:not(.disabled) a',
-      'button[data-testid*="next" i]',
+  function findNextBtn() {
+    const sels = [
+      'button[aria-label*="next" i]', 'button[aria-label*="suivant" i]',
+      'a[aria-label*="next" i]', 'a[aria-label*="suivant" i]',
+      '[class*="next"]:not([disabled])', '[class*="suivant"]:not([disabled])',
+      '.pagination .next:not(.disabled)', 'li.next:not(.disabled) a',
     ];
-
-    for (const sel of nextSelectors) {
-      const el = document.querySelector(sel);
+    for (const s of sels) {
+      const el = document.querySelector(s);
       if (el && isVisible(el) && !el.disabled) return el;
     }
-
-    // Chercher un bouton avec texte "next", "suivant", ">"
-    const allBtns = [...document.querySelectorAll('button, a[href]')];
-    for (const btn of allBtns) {
-      const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
-      if (/^(next|suivant|›|»|>|→)$/.test(txt) && isVisible(btn)) return btn;
+    for (const btn of document.querySelectorAll('button, a[href]')) {
+      const t = (btn.innerText || '').trim();
+      if (/^(next|suivant|›|»|>|→)$/i.test(t) && isVisible(btn)) return btn;
     }
-
     return null;
-  }
-
-  function hasMorePages() {
-    const next = findPaginationElements();
-    if (!next) return false;
-    // Vérifier que le bouton n'est pas désactivé
-    if (next.disabled) return false;
-    if (next.classList.contains('disabled')) return false;
-    if (next.getAttribute('aria-disabled') === 'true') return false;
-    return true;
-  }
-
-  function clickNextPage() {
-    const next = findPaginationElements();
-    if (next) { next.click(); return true; }
-    return false;
   }
 
   function isVisible(el) {
     if (!el) return false;
-    const rect = el.getBoundingClientRect();
-    const style = window.getComputedStyle(el);
-    return rect.width > 0 && rect.height > 0 &&
-      style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    const r = el.getBoundingClientRect();
+    const s = window.getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
   }
 
-  // ── Détection de table HTML ──────────────────────────────────────────────────
+  // ── Détection table HTML ───────────────────────────────────────────────────
 
   function detectTable() {
     const tables = [...document.querySelectorAll('table')].filter(t => isVisible(t));
     if (!tables.length) return null;
 
-    let bestTable = null;
-    let bestScore = 0;
+    let best = null, bestScore = -1;
 
     for (const table of tables) {
-      const rows = table.querySelectorAll('tbody tr');
+      const rows = table.querySelectorAll('tbody tr, tr');
       if (rows.length < 2) continue;
 
-      const headers = [...(table.querySelectorAll('thead th, thead td'))].map(h =>
-        (h.innerText || h.textContent || '').trim()
-      );
+      // Chercher les headers dans thead, tr:first-child, ou th
+      let headers = [...table.querySelectorAll('thead th, thead td')].map(h => cleanText(h));
+      if (!headers.length) {
+        const firstRow = table.querySelector('tr');
+        if (firstRow) headers = [...firstRow.querySelectorAll('th, td')].map(h => cleanText(h));
+      }
 
-      const score = scoreHeaders(headers) + rows.length * 0.5;
-      if (score > bestScore) { bestScore = score; bestTable = { table, headers }; }
+      const score = scoreHeaders(headers) + rows.length * 0.3;
+      if (score > bestScore) { bestScore = score; best = { table, headers }; }
     }
 
-    if (!bestTable || bestScore < 2) return null;
-    return extractFromTable(bestTable.table, bestTable.headers);
+    if (!best || bestScore < 1) return null;
+    return extractTable(best.table, best.headers);
+  }
+
+  function extractTable(table, headers) {
+    if (!headers.length) {
+      const first = table.querySelector('tr');
+      if (first) headers = [...first.querySelectorAll('th, td')].map(h => cleanText(h));
+    }
+    const map = buildMap(headers);
+    const bodyRows = table.querySelectorAll('tbody tr');
+    const rows = bodyRows.length ? [...bodyRows] : [...table.querySelectorAll('tr')].slice(1);
+
+    return rows.map(row => {
+      const cells = [...row.querySelectorAll('td, th')];
+      return buildProspect(map, i => cleanText(cells[i]));
+    }).filter(validProspect);
+  }
+
+  // ── Détection liste générique (divs, cards, li) ────────────────────────────
+
+  function detectList() {
+    // Chercher des conteneurs avec des enfants répétitifs qui contiennent du texte
+    const candidates = [
+      // Sélecteurs très larges pour attraper n'importe quelle liste
+      'ul > li', 'ol > li',
+      '[role="list"] > [role="listitem"]',
+      '[role="row"]',
+      // Classes communes
+      '[class*="row"]', '[class*="item"]', '[class*="card"]',
+      '[class*="contact"]', '[class*="prospect"]', '[class*="lead"]',
+      '[class*="entry"]', '[class*="result"]', '[class*="record"]',
+    ];
+
+    for (const sel of candidates) {
+      try {
+        const items = [...document.querySelectorAll(sel)]
+          .filter(el => isVisible(el) && hasEnoughText(el));
+
+        if (items.length >= 3) {
+          const prospects = extractFromItems(items);
+          if (prospects.length >= 2) return prospects;
+        }
+      } catch(e) {}
+    }
+    return null;
+  }
+
+  function hasEnoughText(el) {
+    const t = (el.innerText || '').trim();
+    return t.length > 5 && t.length < 2000;
+  }
+
+  // ── Détection par analyse DOM répétitif ────────────────────────────────────
+
+  function detectRepeating() {
+    // Grouper les éléments par parent + className
+    const groups = new Map();
+
+    document.querySelectorAll('*').forEach(el => {
+      const parent = el.parentElement;
+      if (!parent) return;
+      const key = parent.tagName + '|' + parent.className;
+      if (!groups.has(key)) groups.set(key, { parent, children: [] });
+      groups.get(key).children.push(el);
+    });
+
+    // Trouver des groupes avec 4+ enfants similaires visibles
+    const candidates = [...groups.values()]
+      .filter(g => g.children.length >= 4 && isVisible(g.parent))
+      .sort((a, b) => b.children.length - a.children.length);
+
+    for (const { children } of candidates.slice(0, 10)) {
+      const visible = children.filter(c => isVisible(c) && hasEnoughText(c));
+      if (visible.length < 3) continue;
+      const prospects = extractFromItems(visible);
+      if (prospects.length >= 2) return prospects;
+    }
+    return null;
+  }
+
+  // ── Extraction depuis items (cards, divs, li...) ───────────────────────────
+
+  function extractFromItems(items) {
+    return items.map(item => {
+      // 1. Chercher des paires label:valeur explicites
+      const labeled = {};
+      item.querySelectorAll('dt, th, [class*="label"], [class*="key"], strong, b').forEach(lEl => {
+        const label = cleanText(lEl);
+        if (!label || label.length > 40) return;
+        const val = cleanText(lEl.nextElementSibling) || cleanText(lEl.parentElement?.querySelector('dd, td, [class*="value"]'));
+        if (val && val !== label) labeled[label] = val;
+      });
+
+      if (Object.keys(labeled).length >= 2) {
+        const map = buildMap(Object.keys(labeled));
+        return buildProspect(map, i => labeled[Object.keys(labeled)[i]]);
+      }
+
+      // 2. Analyse des spans/divs avec classes descriptives
+      const byClass = {};
+      item.querySelectorAll('[class]').forEach(el => {
+        const cls = el.className.toLowerCase();
+        const val = cleanText(el);
+        if (!val || val.length > 100) return;
+        if (/name|nom|prenom|firstname|lastname/.test(cls)) byClass.name = val;
+        if (/company|entreprise|societe|firm/.test(cls)) byClass.company = val;
+        if (/email|mail/.test(cls)) byClass.email = val;
+        if (/phone|tel|mobile/.test(cls)) byClass.phone = val;
+        if (/status|statut|etat|state/.test(cls)) byClass.status = val;
+        if (/date|rdv|appointment/.test(cls)) byClass.date = val;
+        if (/title|poste|job|role|fonction/.test(cls)) byClass.jobtitle = val;
+      });
+
+      if (Object.keys(byClass).length >= 1) {
+        const name = byClass.name || '';
+        const parts = name.split(/\s+/);
+        return {
+          firstname: parts[0] || '',
+          lastname:  parts.slice(1).join(' ') || '',
+          fullname:  name,
+          company:   byClass.company || '',
+          email:     byClass.email || '',
+          phone:     byClass.phone || '',
+          jobtitle:  byClass.jobtitle || '',
+          status:    byClass.status || '',
+          date:      byClass.date || '',
+          source:    window.location.hostname,
+          extra:     {},
+        };
+      }
+
+      // 3. Heuristique sur le texte brut
+      return guessFromText(item);
+    }).filter(validProspect);
+  }
+
+  // ── Heuristique texte brut ─────────────────────────────────────────────────
+
+  function guessFromText(el) {
+    const lines = (el.innerText || '').split('\n').map(l => l.trim()).filter(l => l.length > 1);
+    const p = { firstname:'', lastname:'', fullname:'', company:'', email:'', phone:'', jobtitle:'', status:'', date:'', source: window.location.hostname, extra:{} };
+
+    for (const line of lines) {
+      if (!p.email && /\S+@\S+\.\S+/.test(line)) {
+        p.email = line.match(/\S+@\S+\.\S+/)[0]; continue;
+      }
+      if (!p.phone && /(\+?\d[\d\s.\-()]{7,})/.test(line)) {
+        const m = line.match(/(\+?\d[\d\s.\-()]{7,})/);
+        if (m && m[1].replace(/\D/g,'').length >= 8) { p.phone = m[1].trim(); continue; }
+      }
+      // Nom : 2-4 mots avec majuscule
+      if (!p.fullname && /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜ][a-zàâäéèêëîïôùûüæœ]+(\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜ][\wàâäéèêëîïôùûü-]+){1,3}$/.test(line)) {
+        p.fullname = line;
+        const parts = line.split(/\s+/);
+        p.firstname = parts[0];
+        p.lastname  = parts.slice(1).join(' ');
+        continue;
+      }
+    }
+    return p;
+  }
+
+  // ── Utils ──────────────────────────────────────────────────────────────────
+
+  function cleanText(el) {
+    if (!el) return '';
+    return (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
   }
 
   function scoreHeaders(headers) {
     let score = 0;
     for (const h of headers) {
-      if (NAME_PATTERNS.some(p => p.test(h))) score += 3;
-      if (COMPANY_PATTERNS.some(p => p.test(h))) score += 2;
-      if (EMAIL_PATTERNS.some(p => p.test(h))) score += 2;
-      if (PHONE_PATTERNS.some(p => p.test(h))) score += 2;
-      if (STATUS_PATTERNS.some(p => p.test(h))) score += 1;
-      if (DATE_PATTERNS.some(p => p.test(h))) score += 1;
+      if (!h) continue;
+      if (COL.skip.test(h)) continue;
+      if (COL.firstname.test(h) || COL.lastname.test(h)) score += 3;
+      if (COL.company.test(h)) score += 2;
+      if (COL.email.test(h) || COL.phone.test(h)) score += 2;
+      if (COL.status.test(h) || COL.date.test(h)) score += 1;
+      if (COL.jobtitle.test(h)) score += 1;
     }
     return score;
   }
 
-  function extractFromTable(table, headerLabels) {
-    // Récupérer les headers depuis thead ou première ligne
-    let headers = headerLabels;
-    if (!headers.length) {
-      const firstRow = table.querySelector('tr');
-      if (firstRow) {
-        headers = [...firstRow.querySelectorAll('th, td')].map(c =>
-          (c.innerText || c.textContent || '').trim()
-        );
-      }
-    }
-
-    const mapping = buildMapping(headers);
-    const rows = [...table.querySelectorAll('tbody tr')];
-
-    return rows.map(row => {
-      const cells = [...row.querySelectorAll('td')];
-      return buildProspect(mapping, (i) => (cells[i]?.innerText || cells[i]?.textContent || '').trim());
-    }).filter(p => p.firstname || p.lastname || p.fullname || p.email);
-  }
-
-  // ── Détection de cartes/grilles ─────────────────────────────────────────────
-
-  function detectCards() {
-    // Chercher des conteneurs répétitifs (cards, list items)
-    const candidates = [
-      '[class*="card"]:not([class*="card-body"]):not([class*="card-header"])',
-      '[class*="prospect"]',
-      '[class*="contact"]',
-      '[class*="lead"]',
-      '[class*="row"]:not(tr)',
-      '[class*="item"]:not(li)',
-      'li[class]',
-    ];
-
-    for (const sel of candidates) {
-      const items = [...document.querySelectorAll(sel)].filter(el => {
-        if (!isVisible(el)) return false;
-        const text = (el.innerText || '').trim();
-        return text.length > 10 && text.length < 500;
-      });
-
-      if (items.length >= 3) {
-        const prospects = extractFromCards(items);
-        if (prospects.length >= 2) return prospects;
-      }
-    }
-
-    return null;
-  }
-
-  function extractFromCards(items) {
-    return items.map(item => {
-      const text = (item.innerText || item.textContent || '').trim();
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-      // Chercher des éléments avec des labels explicites
-      const labeled = {};
-      item.querySelectorAll('[class*="label"], [class*="key"], dt, th, strong, b').forEach(el => {
-        const label = (el.innerText || '').trim();
-        const value = (el.nextElementSibling?.innerText || el.parentElement?.lastChild?.textContent || '').trim();
-        if (label && value && label !== value) labeled[label] = value;
-      });
-
-      if (Object.keys(labeled).length > 0) {
-        const headers = Object.keys(labeled);
-        const mapping = buildMapping(headers);
-        return buildProspect(mapping, (i) => labeled[headers[i]] || '');
-      }
-
-      // Fallback : heuristique sur les lignes de texte
-      return guessFromLines(lines);
-    }).filter(p => p.firstname || p.lastname || p.fullname || p.email);
-  }
-
-  // ── Détection JS dynamique (React, Vue, etc.) ────────────────────────────────
-
-  function detectDynamicList() {
-    // Chercher des listes avec des éléments répétitifs par structure similaire
-    const allElements = document.querySelectorAll('*');
-    const parentCounts = {};
-
-    for (const el of allElements) {
-      const parent = el.parentElement;
-      if (!parent) continue;
-      const key = parent.tagName + '.' + [...parent.classList].join('.');
-      parentCounts[key] = (parentCounts[key] || { el: parent, count: 0 });
-      parentCounts[key].count++;
-    }
-
-    // Trouver des parents avec 5+ enfants similaires
-    const candidates = Object.values(parentCounts)
-      .filter(x => x.count >= 5 && isVisible(x.el))
-      .sort((a, b) => b.count - a.count);
-
-    for (const { el: parent } of candidates.slice(0, 5)) {
-      const children = [...parent.children].filter(c => isVisible(c));
-      if (children.length < 3) continue;
-
-      const prospects = extractFromCards(children);
-      if (prospects.length >= 2) return prospects;
-    }
-
-    return null;
-  }
-
-  // ── Mapping de colonnes ──────────────────────────────────────────────────────
-
-  function buildMapping(headers) {
-    const map = { firstname: -1, lastname: -1, fullname: -1, company: -1,
-                  email: -1, phone: -1, title: -1, status: -1, date: -1, extra: [] };
-
+  function buildMap(headers) {
+    const map = { firstname:-1, lastname:-1, fullname:-1, company:-1, email:-1, phone:-1, jobtitle:-1, status:-1, date:-1, extra:[] };
     headers.forEach((h, i) => {
-      if (SKIP_COLUMNS.some(p => p.test(h))) return;
-
-      if (map.firstname === -1 && NAME_PATTERNS[0].test(h)) map.firstname = i;
-      else if (map.lastname === -1 && NAME_PATTERNS[1].test(h)) map.lastname = i;
-      else if (map.fullname === -1 && NAME_PATTERNS[2].test(h)) map.fullname = i;
-      else if (map.company === -1 && COMPANY_PATTERNS[0].test(h)) map.company = i;
-      else if (map.email === -1 && EMAIL_PATTERNS[0].test(h)) map.email = i;
-      else if (map.phone === -1 && PHONE_PATTERNS[0].test(h)) map.phone = i;
-      else if (map.title === -1 && TITLE_PATTERNS[0].test(h)) map.title = i;
-      else if (map.status === -1 && STATUS_PATTERNS[0].test(h)) map.status = i;
-      else if (map.date === -1 && DATE_PATTERNS[0].test(h)) map.date = i;
+      if (!h || COL.skip.test(h)) return;
+      if (map.firstname === -1 && COL.firstname.test(h)) map.firstname = i;
+      else if (map.lastname === -1 && COL.lastname.test(h)) map.lastname = i;
+      else if (map.fullname === -1 && /^(nom.?complet|full.?name|contact|name)$/i.test(h)) map.fullname = i;
+      else if (map.company === -1 && COL.company.test(h)) map.company = i;
+      else if (map.email === -1 && COL.email.test(h)) map.email = i;
+      else if (map.phone === -1 && COL.phone.test(h)) map.phone = i;
+      else if (map.jobtitle === -1 && COL.jobtitle.test(h)) map.jobtitle = i;
+      else if (map.status === -1 && COL.status.test(h)) map.status = i;
+      else if (map.date === -1 && COL.date.test(h)) map.date = i;
       else if (h) map.extra.push({ label: h, index: i });
     });
-
     return map;
   }
 
-  function buildProspect(map, getValue) {
-    const fullname = map.fullname >= 0 ? getValue(map.fullname) : '';
-    const firstname = map.firstname >= 0 ? getValue(map.firstname) : (fullname.split(' ')[0] || '');
-    const lastname  = map.lastname >= 0  ? getValue(map.lastname)  : (fullname.split(' ').slice(1).join(' ') || '');
-
+  function buildProspect(map, get) {
+    const fn  = map.firstname >= 0 ? get(map.firstname) : '';
+    const ln  = map.lastname  >= 0 ? get(map.lastname)  : '';
+    const full = map.fullname >= 0 ? get(map.fullname)  : [fn, ln].filter(Boolean).join(' ');
     const p = {
-      firstname: firstname.trim(),
-      lastname:  lastname.trim(),
-      fullname:  fullname || [firstname, lastname].filter(Boolean).join(' '),
-      company:   map.company >= 0 ? getValue(map.company) : '',
-      email:     map.email   >= 0 ? getValue(map.email)   : '',
-      phone:     map.phone   >= 0 ? getValue(map.phone)   : '',
-      jobtitle:  map.title   >= 0 ? getValue(map.title)   : '',
-      status:    map.status  >= 0 ? getValue(map.status)  : '',
-      date:      map.date    >= 0 ? getValue(map.date)    : '',
+      firstname: fn  || full.split(' ')[0] || '',
+      lastname:  ln  || full.split(' ').slice(1).join(' ') || '',
+      fullname:  full,
+      company:   map.company  >= 0 ? get(map.company)  : '',
+      email:     map.email    >= 0 ? get(map.email)    : '',
+      phone:     map.phone    >= 0 ? get(map.phone)    : '',
+      jobtitle:  map.jobtitle >= 0 ? get(map.jobtitle) : '',
+      status:    map.status   >= 0 ? get(map.status)   : '',
+      date:      map.date     >= 0 ? get(map.date)     : '',
       source:    window.location.hostname,
       extra:     {},
     };
-
-    for (const { label, index } of (map.extra || [])) {
-      const val = getValue(index);
-      if (val) p.extra[label] = val;
-    }
-
+    (map.extra || []).forEach(({ label, index }) => {
+      const v = get(index);
+      if (v) p.extra[label] = v;
+    });
     return p;
   }
 
-  // ── Heuristique sur texte brut ───────────────────────────────────────────────
-
-  function guessFromLines(lines) {
-    const p = { firstname: '', lastname: '', fullname: '', company: '', email: '', phone: '', status: '', extra: {}, source: window.location.hostname };
-
-    for (const line of lines) {
-      // Email
-      if (!p.email && /\S+@\S+\.\S+/.test(line)) {
-        p.email = line.match(/\S+@\S+\.\S+/)[0];
-        continue;
-      }
-      // Téléphone
-      if (!p.phone && /(\+\d[\d\s.-]{7,}|\d{2}[\s.-]\d{2}[\s.-]\d{2}[\s.-]\d{2}[\s.-]\d{2})/.test(line)) {
-        p.phone = line.trim();
-        continue;
-      }
-      // Nom (heuristique : 2 mots, majuscule)
-      if (!p.fullname && /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜ][a-zàâäéèêëîïôùûü]+ [A-ZÀÂÄÉÈÊËÎÏÔÙÛÜ]/.test(line) && line.split(' ').length <= 4) {
-        p.fullname = line;
-        const parts = line.split(' ');
-        p.firstname = parts[0];
-        p.lastname = parts.slice(1).join(' ');
-        continue;
-      }
-    }
-
-    return p;
+  function validProspect(p) {
+    return !!(p.firstname || p.lastname || p.fullname || p.email || p.company);
   }
 
-  // ── Interface principale ─────────────────────────────────────────────────────
+  function dedup(arr) {
+    const seen = new Set();
+    return arr.filter(p => {
+      const key = (p.email || p.fullname || p.firstname + p.lastname).toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
 
-  let allProspects = [];
+  // ── Détection principale ───────────────────────────────────────────────────
+
+  function detectOnPage() {
+    const results = detectTable() || detectList() || detectRepeating() || [];
+    return dedup(results);
+  }
+
+  // ── Pagination auto ────────────────────────────────────────────────────────
+
   let isCollecting = false;
+  let allProspects = [];
 
-  async function collectAllPages(sendUpdate) {
+  async function collectAll(onUpdate) {
     if (isCollecting) return;
     isCollecting = true;
     allProspects = [];
-
     let page = 1;
-    const maxPages = 50;
 
-    while (page <= maxPages) {
-      await sleep(800); // Laisser le DOM se stabiliser
+    while (page <= 50 && isCollecting) {
+      await sleep(600);
+      const pageItems = detectOnPage();
 
-      const pageProspects = detectOnCurrentPage();
-      if (pageProspects.length === 0 && page === 1) break;
-
-      // Dédupliquer avec les pages précédentes
-      const newOnes = pageProspects.filter(p =>
-        !allProspects.some(existing =>
-          existing.email === p.email ||
-          (existing.firstname === p.firstname && existing.lastname === p.lastname && p.firstname)
+      const newOnes = pageItems.filter(p =>
+        !allProspects.some(e =>
+          (e.email && e.email === p.email) ||
+          (e.firstname === p.firstname && e.lastname === p.lastname && p.firstname)
         )
       );
-
       allProspects.push(...newOnes);
 
-      if (sendUpdate) sendUpdate({ page, total: allProspects.length, prospects: allProspects });
+      if (onUpdate) onUpdate({ page, total: allProspects.length, prospects: allProspects });
 
-      if (!hasMorePages()) break;
-
-      clickNextPage();
+      const next = findNextBtn();
+      if (!next || next.disabled || next.classList.contains('disabled')) break;
+      next.click();
       page++;
-      await sleep(1500); // Attendre chargement page suivante
+      await sleep(1200);
     }
 
     isCollecting = false;
     return allProspects;
   }
 
-  function detectOnCurrentPage() {
-    return detectTable() || detectCards() || detectDynamicList() || [];
-  }
-
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // ── Listener messages ────────────────────────────────────────────────────────
+  // ── Messages ───────────────────────────────────────────────────────────────
 
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === 'ping') {
       sendResponse({ ok: true, url: window.location.href });
       return false;
     }
 
     if (msg.action === 'detect') {
-      const prospects = detectOnCurrentPage();
-      sendResponse({
-        prospects,
-        total: prospects.length,
-        hasNextPage: hasMorePages(),
-        url: window.location.href,
-        title: document.title,
-      });
+      const prospects = detectOnPage();
+      sendResponse({ prospects, total: prospects.length, hasNextPage: !!findNextBtn() });
       return false;
     }
 
     if (msg.action === 'collect_all') {
-      // Lance la collecte multi-pages et répond à chaque update
-      collectAllPages((update) => {
-        chrome.runtime.sendMessage({ action: 'collect_update', ...update }).catch(() => {});
+      collectAll(upd => {
+        api.runtime.sendMessage({ action: 'collect_update', ...upd }).catch(() => {});
       }).then(all => {
         sendResponse({ done: true, total: all.length, prospects: all });
       });
-      return true; // async
+      return true;
     }
 
     if (msg.action === 'stop_collect') {
@@ -410,5 +384,5 @@
     }
   });
 
-  console.log('[Prospector] Prêt sur', window.location.hostname);
+  console.log('[Prospector v2] Prêt sur', window.location.hostname);
 })();
