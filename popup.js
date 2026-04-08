@@ -69,14 +69,7 @@ async function checkPage() {
       text.textContent = tab.url.replace(/^https?:\/\//, '').substring(0, 48);
     } else {
       // Injecter le content script manuellement si pas encore là
-      // Inject content script (Chrome MV3 + Firefox MV2 compatible)
-      try {
-        if (typeof chrome.scripting !== "undefined") {
-          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["src/content.js"] });
-        } else {
-          await browser.tabs.executeScript(tab.id, { file: "src/content.js" });
-        }
-      } catch(e) { console.log("Script already injected"); }
+      // content.js est injecté automatiquement via content_scripts dans manifest
       dot.className = 'dot amber';
       text.textContent = tab.url.replace(/^https?:\/\//, '').substring(0, 48);
     }
@@ -115,7 +108,11 @@ async function scan() {
   }
 
   const btn = document.getElementById('btn-scan');
-  btn.innerHTML = '<span class="spinner spinner-dark"></span> Arrêter';
+  btn.textContent = '';
+  const sp = document.createElement('span');
+  sp.className = 'spinner spinner-dark';
+  btn.appendChild(sp);
+  btn.appendChild(document.createTextNode(' Arrêter'));
   isScanning = true;
   stopRequested = false;
 
@@ -153,7 +150,7 @@ async function scan() {
     log('Erreur de scan : ' + e.message, 'err');
     showEmpty('Erreur de scan', 'Actualise la page et réessaie.');
   } finally {
-    btn.innerHTML = '<span>🔍</span> Scanner';
+    btn.textContent = '🔍 Scanner';
     isScanning = false;
     document.getElementById('collecting-bar').classList.remove('active');
   }
@@ -331,8 +328,15 @@ async function syncProspect(p, apiKey, mode) {
 function renderList() {
   if (!prospects.length) { showEmpty(); return; }
 
-  document.getElementById('list-wrap').innerHTML =
-    prospects.map(p => itemHTML(p)).join('');
+  const listWrap = document.getElementById('list-wrap');
+  listWrap.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  prospects.forEach(p => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = itemHTML(p); // trusted internal HTML
+    frag.appendChild(tmp.firstChild);
+  });
+  listWrap.appendChild(frag);
 
   document.getElementById('stats-row').style.display = 'grid';
   document.getElementById('btn-import').disabled = !settings.hs_token;
@@ -340,7 +344,11 @@ function renderList() {
 
 function renderItem(p) {
   const el = document.getElementById('item-' + CSS.escape(pid(p)));
-  if (el) el.outerHTML = itemHTML(p);
+  if (el) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = itemHTML(p); // trusted internal HTML
+    el.parentNode.replaceChild(tmp.firstChild, el);
+  }
 }
 
 function itemHTML(p) {
@@ -369,12 +377,15 @@ function itemHTML(p) {
 }
 
 function showEmpty(title = 'Aucun prospect détecté', desc = 'Navigue sur une page avec une liste de contacts et clique sur Scanner') {
-  document.getElementById('list-wrap').innerHTML = `
-    <div class="empty">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">${title}</div>
-      <div class="empty-desc">${desc}</div>
-    </div>`;
+  const w = document.getElementById('list-wrap');
+  w.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'empty';
+  const icon = document.createElement('div'); icon.className = 'empty-icon'; icon.textContent = '📋';
+  const t = document.createElement('div'); t.className = 'empty-title'; t.textContent = title;
+  const s = document.createElement('div'); s.className = 'empty-desc'; s.textContent = desc;
+  d.appendChild(icon); d.appendChild(t); d.appendChild(s);
+  w.appendChild(d);
   document.getElementById('stats-row').style.display = 'none';
   document.getElementById('footer').style.display = 'none';
 }
