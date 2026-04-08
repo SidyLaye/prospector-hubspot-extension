@@ -50,7 +50,8 @@
   // ── Détection table HTML ───────────────────────────────────────────────────
 
   function detectTable() {
-    const tables = [...document.querySelectorAll('table')].filter(t => isVisible(t));
+    // Ne pas filtrer sur isVisible — la table peut être hors viewport (scroll)
+    const tables = [...document.querySelectorAll('table')];
     if (!tables.length) return null;
 
     let best = null, bestScore = -1;
@@ -316,6 +317,8 @@
   // ── Détection principale ───────────────────────────────────────────────────
 
   function detectOnPage() {
+    // Scroller vers le bas pour déclencher le lazy loading si besoin
+    window.scrollTo(0, document.body.scrollHeight / 2);
     const results = detectTable() || detectList() || detectRepeating() || [];
     return dedup(results);
   }
