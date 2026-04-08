@@ -199,21 +199,58 @@
       btn.addEventListener('mouseenter', () => { btn.style.background = '#333'; });
       btn.addEventListener('mouseleave', () => { btn.style.background = '#1a1a1a'; });
 
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        // Envoyer les prospects au popup via le runtime
+
+        btn.innerHTML = '⏳ Collecte en cours...';
+        btn.style.background = '#2563eb';
+        btn.disabled = true;
+
+        // Collecter page courante + toutes les pages suivantes
+        let allCollected = [...prospects];
+        let page = 1;
+
+        while (true) {
+          const next = findNextBtn();
+          if (!next) break;
+
+          // Mettre à jour le bouton avec la progression
+          btn.innerHTML = `⏳ Page ${page + 1}... (${allCollected.length} collectés)`;
+
+          next.click();
+          await sleep(1500); // Attendre le chargement
+
+          // Extraire les prospects de la nouvelle page
+          const newResult = extractTable(el);
+          if (newResult) {
+            const newOnes = newResult.prospects.filter(p =>
+              !allCollected.some(e =>
+                (e.email && e.email === p.email) ||
+                (e.firstname === p.firstname && e.lastname === p.lastname && p.firstname)
+              )
+            );
+            allCollected.push(...newOnes);
+          }
+
+          page++;
+          if (page > 50) break; // Sécurité anti-boucle infinie
+        }
+
+        // Envoyer tous les prospects collectés au popup
         api.runtime.sendMessage({
           action: 'prospects_from_page',
-          prospects: prospects,
-          source: `Tableau ${idx + 1} (${prospects.length} contacts)`,
+          prospects: allCollected,
+          source: `Tableau ${idx + 1} — ${page} page${page > 1 ? 's' : ''} (${allCollected.length} contacts)`,
         }).catch(() => {});
 
-        btn.innerHTML = `✓ ${prospects.length} ajouté${prospects.length > 1 ? 's' : ''} !`;
+        btn.innerHTML = `✓ ${allCollected.length} prospect${allCollected.length > 1 ? 's' : ''} sur ${page} page${page > 1 ? 's' : ''} !`;
         btn.style.background = '#16a34a';
+        btn.disabled = false;
+
         setTimeout(() => {
-          btn.innerHTML = `📋 ${prospects.length} prospect${prospects.length > 1 ? 's' : ''} — Ajouter au scan`;
+          btn.innerHTML = `📋 ${allCollected.length} prospect${allCollected.length > 1 ? 's' : ''} — Ajouter au scan`;
           btn.style.background = '#1a1a1a';
-        }, 2000);
+        }, 3000);
       });
 
       wrapper.appendChild(btn);
