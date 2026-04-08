@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
-  "name": "Prospector → HubSpot",
+  "name": "Prospector \u2192 HubSpot",
   "short_name": "Prospector",
   "version": "1.0.0",
-  "description": "Détecte et importe automatiquement les listes de prospects de n'importe quelle page web vers HubSpot — avec pagination, déduplication et mapping intelligent.",
+  "description": "D\u00e9tecte et importe automatiquement les listes de prospects de n'importe quelle page web vers HubSpot \u2014 avec pagination, d\u00e9duplication et mapping intelligent.",
   "author": "AMBS Agency",
   "permissions": [
     "activeTab",
@@ -19,7 +19,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Prospector → HubSpot"
+    "default_title": "Prospector \u2192 HubSpot"
   },
   "background": {
     "scripts": [
@@ -66,5 +66,6 @@
         "optional": []
       }
     }
-  }
+  },
+  "content_security_policy": "script-src 'self'; object-src 'self'"
 }
