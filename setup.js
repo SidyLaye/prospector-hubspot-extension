@@ -1,133 +1,115 @@
-// setup.js — Prospector Configuration
-const api = (typeof browser !== 'undefined') ? browser : chrome;
+// ── Variables globales ──────────────────────────────────────────────────────
+var _api = (typeof browser !== 'undefined') ? browser : chrome;
+var _step = 1;
+var _ok = false;
+var _mode = 'upsert';
 
-let currentStep = 1;
-let connectionOk = false;
+// ── Fonctions globales (appelables depuis n'importe où) ────────────────────
 
 function goStep(n) {
-  if (n > 1 && !connectionOk) return;
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + n).classList.add('active');
-  document.querySelectorAll('.step').forEach((s, i) => {
+  if (n > 1 && !_ok) return;
+  _step = n;
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + n);
+  if (panel) panel.classList.add('active');
+  for (var i = 1; i <= 3; i++) {
+    var s = document.getElementById('step-' + i);
+    if (!s) continue;
     s.classList.remove('active', 'done');
-    if (i + 1 < n) s.classList.add('done');
-    if (i + 1 === n) s.classList.add('active');
-  });
-  currentStep = n;
-}
-
-function selectMode(card) {
-  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('sel'));
-  card.classList.add('sel');
-  card.querySelector('input').checked = true;
-}
-
-async function testConnection() {
-  const token = document.getElementById('hs-token').value.trim();
-  const btn   = document.getElementById('btn-test');
-  const next  = document.getElementById('btn-next-1');
-  const input = document.getElementById('hs-token');
-
-  if (!token) {
-    showAlert('err', 'Entre ton token HubSpot d\'abord.');
-    return;
+    if (i < n) s.classList.add('done');
+    if (i === n) s.classList.add('active');
   }
+}
+
+function selectMode(m) {
+  _mode = m;
+  ['upsert','skip','always'].forEach(function(x) {
+    var el = document.getElementById('mode-' + x);
+    if (el) el.classList.toggle('sel', x === m);
+  });
+}
+
+function showAlert(type, msg) {
+  var el = document.getElementById('alert-1');
+  if (!el) return;
+  el.className = 'alert alert-' + type + ' show';
+  el.textContent = msg;
+}
+
+function testConnection() {
+  var tokenEl = document.getElementById('hs-token');
+  var btn = document.getElementById('btn-test');
+  var next = document.getElementById('btn-next-1');
+  if (!tokenEl || !btn) { alert('Erreur : éléments non trouvés'); return; }
+  
+  var token = tokenEl.value.trim();
+  if (!token) { showAlert('err', 'Entre ta clé HubSpot d\'abord.'); return; }
 
   btn.textContent = '...';
   btn.disabled = true;
   showAlert('info', 'Vérification en cours...');
 
-  try {
-    // HubSpot accepte Bearer token ET hapikey selon le type de clé
-    const isLegacy = !token.startsWith('pat-');
-    const headers = isLegacy
-      ? { 'Authorization': 'Bearer ' + token }
-      : { 'Authorization': 'Bearer ' + token };
-
-    // Essayer d'abord avec Bearer
-    let res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', { headers });
-
-    // Si 401, essayer avec hapikey (format legacy)
-    if (res.status === 401 && isLegacy) {
-      res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1&hapikey=' + token);
-    }
-
-    const data = await res.json();
-
-    if (res.ok) {
-      input.classList.remove('err');
-      input.classList.add('ok');
-      connectionOk = true;
-      next.disabled = false;
-      await api.storage.local.set({ hs_token: token });
-      showAlert('ok', 'Connexion réussie — ' + (data.total || 0) + ' contact(s) dans HubSpot.');
+  fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, status: res.status, data: data }; }); })
+  .then(function(r) {
+    if (r.ok) {
+      tokenEl.style.borderColor = '#16a34a';
+      _ok = true;
+      if (next) next.disabled = false;
+      _api.storage.local.set({ hs_token: token });
+      showAlert('ok', 'Connexion réussie — ' + (r.data.total || 0) + ' contact(s) dans HubSpot.');
     } else {
-      input.classList.add('err');
-      connectionOk = false;
-      let msg = data.message || ('Erreur ' + res.status);
-      if (res.status === 401) msg = 'Clé refusée par HubSpot. Il faut un token PAT (pas la clé d\'accès personnelle). Va dans Applications héritées → crée une app → copie le token pat-eu1-...';
-      if (res.status === 403) msg = 'Permissions insuffisantes — scope contacts.read et contacts.write requis.';
+      tokenEl.style.borderColor = '#dc2626';
+      _ok = false;
+      var msg = r.data.message || ('Erreur ' + r.status);
+      if (r.status === 401) msg = 'Clé invalide. Vérifie que tu as bien copié la clé complète.';
+      if (r.status === 403) msg = 'Permissions insuffisantes. Ajoute les scopes contacts.read et contacts.write.';
       showAlert('err', msg);
     }
-  } catch(e) {
+    btn.textContent = 'Tester';
+    btn.disabled = false;
+  })
+  .catch(function(e) {
     showAlert('err', 'Erreur réseau : ' + e.message);
-  }
-
-  btn.textContent = 'Tester';
-  btn.disabled = false;
+    btn.textContent = 'Tester';
+    btn.disabled = false;
+  });
 }
 
-async function saveAndFinish() {
-  const modeEl = document.querySelector('input[name="mode"]:checked');
-  const mode   = modeEl ? modeEl.value : 'upsert';
-  const delay  = parseInt(document.getElementById('import-delay').value) || 300;
-  const paginate = document.getElementById('auto-paginate').value === 'yes';
-  await api.storage.local.set({ import_mode: mode, import_delay: delay, auto_paginate: paginate });
+function saveAndFinish() {
+  var delay = parseInt(document.getElementById('import-delay').value) || 300;
+  var paginate = document.getElementById('auto-paginate').value === 'yes';
+  _api.storage.local.set({ import_mode: _mode, import_delay: delay, auto_paginate: paginate });
   goStep(3);
 }
 
-function showAlert(type, msg) {
-  const el = document.getElementById('alert-1');
-  el.className = 'alert ' + type + ' show';
-  el.textContent = msg;
-}
-
-async function loadSettings() {
-  try {
-    const d = await api.storage.local.get(['hs_token', 'import_mode', 'import_delay', 'auto_paginate']);
+function loadSettings() {
+  _api.storage.local.get(['hs_token','import_mode','import_delay','auto_paginate']).then(function(d) {
     if (d.hs_token) {
-      document.getElementById('hs-token').value = d.hs_token;
-      document.getElementById('hs-token').classList.add('ok');
-      connectionOk = true;
-      document.getElementById('btn-next-1').disabled = false;
+      var el = document.getElementById('hs-token');
+      if (el) { el.value = d.hs_token; el.style.borderColor = '#16a34a'; }
+      _ok = true;
+      var next = document.getElementById('btn-next-1');
+      if (next) next.disabled = false;
     }
-    if (d.import_delay) document.getElementById('import-delay').value = d.import_delay;
-    if (d.auto_paginate === false) document.getElementById('auto-paginate').value = 'no';
-    if (d.import_mode) {
-      document.querySelectorAll('.mode-card').forEach(c => {
-        const inp = c.querySelector('input');
-        c.classList.toggle('sel', inp.value === d.import_mode);
-        inp.checked = inp.value === d.import_mode;
-      });
-    }
-  } catch(e) { console.warn('Storage:', e.message); }
+    if (d.import_delay) { var el = document.getElementById('import-delay'); if (el) el.value = d.import_delay; }
+    if (d.auto_paginate === false) { var el = document.getElementById('auto-paginate'); if (el) el.value = 'no'; }
+    if (d.import_mode) selectMode(d.import_mode);
+  }).catch(function(e) { console.warn('storage:', e); });
 }
 
-// ── Tout via addEventListener — pas de onclick dans le HTML ──────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
+// ── Attacher les événements ────────────────────────────────────────────────
+document.getElementById('btn-test').onclick = testConnection;
+document.getElementById('btn-next-1').onclick = function() { goStep(2); };
+document.getElementById('btn-back').onclick = function() { goStep(1); };
+document.getElementById('btn-save').onclick = saveAndFinish;
+document.getElementById('btn-close').onclick = function() { window.close(); };
+document.getElementById('mode-upsert').onclick = function() { selectMode('upsert'); };
+document.getElementById('mode-skip').onclick = function() { selectMode('skip'); };
+document.getElementById('mode-always').onclick = function() { selectMode('always'); };
+document.getElementById('hs-token').onkeydown = function(e) { if (e.key === 'Enter') testConnection(); };
 
-  document.getElementById('btn-test').addEventListener('click', testConnection);
-  document.getElementById('btn-next-1').addEventListener('click', () => goStep(2));
-  document.getElementById('btn-back').addEventListener('click', () => goStep(1));
-  document.getElementById('btn-save').addEventListener('click', saveAndFinish);
-  document.getElementById('btn-close').addEventListener('click', () => window.close());
-
-  document.getElementById('hs-token').addEventListener('keydown', e => {
-    if (e.key === 'Enter') testConnection();
-  });
-
-  document.querySelectorAll('.mode-card').forEach(card => {
-    card.addEventListener('click', () => selectMode(card));
-  });
-});
+// ── Init ──────────────────────────────────────────────────────────────────
+loadSettings();
