@@ -35,11 +35,7 @@
     "default_title": "Prospector \u2192 HubSpot"
   },
   "background": {
-    "service_worker": "src/background.js",
-    "scripts": [
-      "src/background.js"
-    ],
-    "type": "module"
+    "service_worker": "src/background.js"
   },
   "content_scripts": [
     {
