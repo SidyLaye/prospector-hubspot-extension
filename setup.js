@@ -29,16 +29,13 @@ async function testConnection() {
   const input = document.getElementById('hs-token');
 
   if (!token) {
-    showAlert('err', '⚠ Entre ton token HubSpot d\'abord.');
+    showAlert('err', 'Entre ton token HubSpot d\'abord.');
     return;
   }
 
-  btn.textContent = '';
-  const sp = document.createElement('span');
-  sp.className = 'spin';
-  btn.appendChild(sp);
+  btn.textContent = '...';
   btn.disabled = true;
-  showAlert('info', '⏳ Vérification en cours...');
+  showAlert('info', 'Vérification en cours...');
 
   try {
     const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', {
@@ -48,21 +45,22 @@ async function testConnection() {
     const data = await res.json();
 
     if (res.ok) {
-      input.className = 'ok';
+      input.classList.remove('err');
+      input.classList.add('ok');
       connectionOk = true;
       next.disabled = false;
       await api.storage.local.set({ hs_token: token });
-      showAlert('ok', '✓ Connexion réussie — ' + (data.total || 0) + ' contact(s) dans ton HubSpot.');
+      showAlert('ok', 'Connexion réussie — ' + (data.total || 0) + ' contact(s) dans HubSpot.');
     } else {
-      input.className = 'err';
+      input.classList.add('err');
       connectionOk = false;
       let msg = data.message || ('Erreur ' + res.status);
-      if (res.status === 401) msg = 'Token invalide — copie le token complet depuis HubSpot.';
-      if (res.status === 403) msg = 'Permissions manquantes — ajoute crm.objects.contacts.read et .write.';
-      showAlert('err', '✗ ' + msg);
+      if (res.status === 401) msg = 'Token invalide — vérifie que tu as copié la clé complète.';
+      if (res.status === 403) msg = 'Permissions insuffisantes — scope contacts.read et contacts.write requis.';
+      showAlert('err', msg);
     }
   } catch(e) {
-    showAlert('err', '✗ Erreur réseau : ' + e.message);
+    showAlert('err', 'Erreur réseau : ' + e.message);
   }
 
   btn.textContent = 'Tester';
@@ -74,7 +72,6 @@ async function saveAndFinish() {
   const mode   = modeEl ? modeEl.value : 'upsert';
   const delay  = parseInt(document.getElementById('import-delay').value) || 300;
   const paginate = document.getElementById('auto-paginate').value === 'yes';
-
   await api.storage.local.set({ import_mode: mode, import_delay: delay, auto_paginate: paginate });
   goStep(3);
 }
@@ -90,7 +87,7 @@ async function loadSettings() {
     const d = await api.storage.local.get(['hs_token', 'import_mode', 'import_delay', 'auto_paginate']);
     if (d.hs_token) {
       document.getElementById('hs-token').value = d.hs_token;
-      document.getElementById('hs-token').className = 'ok';
+      document.getElementById('hs-token').classList.add('ok');
       connectionOk = true;
       document.getElementById('btn-next-1').disabled = false;
     }
@@ -99,17 +96,28 @@ async function loadSettings() {
     if (d.import_mode) {
       document.querySelectorAll('.mode-card').forEach(c => {
         const inp = c.querySelector('input');
-        const match = inp.value === d.import_mode;
-        c.classList.toggle('sel', match);
-        inp.checked = match;
+        c.classList.toggle('sel', inp.value === d.import_mode);
+        inp.checked = inp.value === d.import_mode;
       });
     }
   } catch(e) { console.warn('Storage:', e.message); }
 }
 
+// ── Tout via addEventListener — pas de onclick dans le HTML ──────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+
+  document.getElementById('btn-test').addEventListener('click', testConnection);
+  document.getElementById('btn-next-1').addEventListener('click', () => goStep(2));
+  document.getElementById('btn-back').addEventListener('click', () => goStep(1));
+  document.getElementById('btn-save').addEventListener('click', saveAndFinish);
+  document.getElementById('btn-close').addEventListener('click', () => window.close());
+
   document.getElementById('hs-token').addEventListener('keydown', e => {
     if (e.key === 'Enter') testConnection();
+  });
+
+  document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', () => selectMode(card));
   });
 });
