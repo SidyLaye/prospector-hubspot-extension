@@ -287,17 +287,21 @@ let stopRequested = false;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initPopup() {
   settings = await loadSettings();
-
   if (!settings.hs_token) {
     document.getElementById('config-banner').style.display = 'flex';
   }
-
   await checkPage();
   await loadCached();
   listenMessages();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPopup);
+} else {
+  initPopup();
+}
 
 async function loadSettings() {
   return api.storage.local.get([

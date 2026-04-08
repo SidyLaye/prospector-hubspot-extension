@@ -371,23 +371,27 @@ async function loadSettings() {
 }
 
 // ── Tout via addEventListener — pas de onclick dans le HTML ──────────────────
-document.addEventListener('DOMContentLoaded', () => {
+function initSetup() {
   loadSettings();
-
   document.getElementById('btn-test').addEventListener('click', testConnection);
   document.getElementById('btn-next-1').addEventListener('click', () => goStep(2));
   document.getElementById('btn-back').addEventListener('click', () => goStep(1));
   document.getElementById('btn-save').addEventListener('click', saveAndFinish);
   document.getElementById('btn-close').addEventListener('click', () => window.close());
-
   document.getElementById('hs-token').addEventListener('keydown', e => {
     if (e.key === 'Enter') testConnection();
   });
-
   document.querySelectorAll('.mode-card').forEach(card => {
     card.addEventListener('click', () => selectMode(card));
   });
-});
+}
+
+// Appel immédiat — le script est à la fin du body donc le DOM est prêt
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSetup);
+} else {
+  initSetup();
+}
 
 </script>
 </body>
