@@ -202,26 +202,27 @@
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
 
-        btn.innerHTML = '⏳ Collecte en cours...';
+        btn.innerHTML = '⏳ Collecte...';
         btn.style.background = '#2563eb';
         btn.disabled = true;
 
-        // Collecter page courante + toutes les pages suivantes
+        // Collecter page courante
         let allCollected = [...prospects];
         let page = 1;
 
+        // Paginer sans limite jusqu'à la dernière page
         while (true) {
           const next = findNextBtn();
-          if (!next) break;
+          if (!next) break; // Plus de page suivante → fin
 
-          // Mettre à jour le bouton avec la progression
-          btn.innerHTML = `⏳ Page ${page + 1}... (${allCollected.length} collectés)`;
-
+          btn.innerHTML = `⏳ Page ${page + 1}… (${allCollected.length})`;
           next.click();
-          await sleep(1500); // Attendre le chargement
 
-          // Extraire les prospects de la nouvelle page
-          const newResult = extractTable(el);
+          // Attendre que le DOM se mette à jour (JS ou HTML)
+          await sleep(1500);
+
+          // Extraire la nouvelle page — chercher le même tableau ou n'importe quelle table
+          const newResult = extractTable(el) || (detectAllSources()[0] || null);
           if (newResult) {
             const newOnes = newResult.prospects.filter(p =>
               !allCollected.some(e =>
@@ -231,26 +232,25 @@
             );
             allCollected.push(...newOnes);
           }
-
           page++;
-          if (page > 50) break; // Sécurité anti-boucle infinie
         }
 
-        // Envoyer tous les prospects collectés au popup
+        // Envoyer tout au popup
         api.runtime.sendMessage({
           action: 'prospects_from_page',
           prospects: allCollected,
-          source: `Tableau ${idx + 1} — ${page} page${page > 1 ? 's' : ''} (${allCollected.length} contacts)`,
+          source: `Tableau — ${page} page${page > 1 ? 's' : ''} (${allCollected.length} contacts)`,
         }).catch(() => {});
 
-        btn.innerHTML = `✓ ${allCollected.length} prospect${allCollected.length > 1 ? 's' : ''} sur ${page} page${page > 1 ? 's' : ''} !`;
+        // Confirmation 1 seconde puis disparition
+        btn.innerHTML = `✓ ${allCollected.length} ajouté${allCollected.length > 1 ? 's' : ''} !`;
         btn.style.background = '#16a34a';
-        btn.disabled = false;
 
         setTimeout(() => {
-          btn.innerHTML = `📋 ${allCollected.length} prospect${allCollected.length > 1 ? 's' : ''} — Ajouter au scan`;
-          btn.style.background = '#1a1a1a';
-        }, 3000);
+          btn.style.opacity = '0';
+          btn.style.transition = 'opacity 0.3s';
+          setTimeout(() => btn.remove(), 300);
+        }, 1000);
       });
 
       wrapper.appendChild(btn);
