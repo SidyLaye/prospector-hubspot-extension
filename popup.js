@@ -69,7 +69,14 @@ async function checkPage() {
       text.textContent = tab.url.replace(/^https?:\/\//, '').substring(0, 48);
     } else {
       // Injecter le content script manuellement si pas encore là
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['src/content.js'] }).catch(() => {});
+      // Inject content script (Chrome MV3 + Firefox MV2 compatible)
+      try {
+        if (typeof chrome.scripting !== "undefined") {
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["src/content.js"] });
+        } else {
+          await browser.tabs.executeScript(tab.id, { file: "src/content.js" });
+        }
+      } catch(e) { console.log("Script already injected"); }
       dot.className = 'dot amber';
       text.textContent = tab.url.replace(/^https?:\/\//, '').substring(0, 48);
     }

@@ -1,18 +1,21 @@
-// src/background.js — Service Worker Prospector
+// background.js — Compatible Firefox MV2 et Chrome MV3 service worker
 
-// Ouvrir la page de setup au premier lancement
-chrome.runtime.onInstalled.addListener(async (details) => {
+var isFirefox = typeof browser !== 'undefined';
+var api = isFirefox ? browser : chrome;
+
+api.runtime.onInstalled.addListener(function(details) {
   if (details.reason === 'install') {
-    const setupUrl = chrome.runtime.getURL('setup.html');
-    chrome.tabs.create({ url: setupUrl });
+    var setupUrl = api.runtime.getURL('setup.html');
+    api.tabs.create({ url: setupUrl });
   }
 });
 
-// Relayer les messages collect_update du content script vers le popup
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+api.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
   if (msg.action === 'collect_update') {
-    // Broadcast à tous les ports connectés (popup)
-    chrome.runtime.sendMessage(msg).catch(() => {});
+    // Relay update vers le popup (best effort)
+    api.runtime.sendMessage(msg).catch ? 
+      api.runtime.sendMessage(msg).catch(function() {}) : 
+      api.runtime.sendMessage(msg);
   }
   return false;
 });

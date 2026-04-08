@@ -3,61 +3,19 @@
   "name": "Prospector → HubSpot",
   "short_name": "Prospector",
   "version": "1.0.0",
-  "description": "Détecte et importe automatiquement les listes de prospects de n'importe quelle page web vers HubSpot — avec pagination, déduplication et mapping intelligent.",
+  "description": "Détecte et importe automatiquement les listes de prospects de n'importe quelle page web vers HubSpot.",
   "author": "AMBS Agency",
-
-  "permissions": [
-    "activeTab",
-    "storage",
-    "tabs",
-    "<all_urls>"
-  ],
-
+  "permissions": ["activeTab", "storage", "tabs", "<all_urls>"],
   "browser_action": {
     "default_popup": "popup.html",
-    "default_icon": {
-      "16":  "icons/icon16.png",
-      "32":  "icons/icon32.png",
-      "48":  "icons/icon48.png",
-      "128": "icons/icon128.png"
-    },
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
     "default_title": "Prospector → HubSpot"
   },
-
-  "background": {
-    "scripts": ["src/background.firefox.js"],
-    "persistent": false
-  },
-
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["src/content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
-  ],
-
+  "background": { "scripts": ["src/background.js"], "persistent": false },
+  "content_scripts": [{ "matches": ["<all_urls>"], "js": ["src/content.js"], "run_at": "document_idle", "all_frames": false }],
   "web_accessible_resources": ["setup.html", "icons/*"],
-
-  "icons": {
-    "16":  "icons/icon16.png",
-    "32":  "icons/icon32.png",
-    "48":  "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-
-  "options_ui": {
-    "page": "setup.html",
-    "open_in_tab": true
-  },
-
-  "homepage_url": "https://ambs-agency.com",
-
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "prospector-hubspot@ambs-agency.com",
-      "strict_min_version": "91.0"
-    }
-  }
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "options_ui": { "page": "setup.html", "open_in_tab": true },
+  "homepage_url": "https://github.com/SidyLaye/prospector-hubspot-extension",
+  "browser_specific_settings": { "gecko": { "id": "prospector-hubspot@ambs-agency.com", "strict_min_version": "91.0" } }
 }
