@@ -3,408 +3,310 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prospector — Configuration</title>
+<title>Prospector → HubSpot — Configuration</title>
 <style>
-:root {
-  --bg: #f8f8f6;
-  --surface: #ffffff;
-  --border: #e5e5e2;
-  --text: #1a1a1a;
-  --muted: #6b7280;
-  --accent: #1a1a1a;
-  --accent-text: #ffffff;
-  --green: #16a34a;
-  --green-bg: #dcfce7;
-  --red: #dc2626;
-  --red-bg: #fee2e2;
-  --blue: #2563eb;
-  --blue-bg: #dbeafe;
-  --orange: #d97706;
-  --orange-bg: #fef3c7;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f5f3;
+  color: #1a1a1a;
   min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
 }
+.wrap { width: 100%; max-width: 560px; }
 
-/* ── Layout ── */
-.page { max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
-
-/* ── Header ── */
-.logo { display: flex; align-items: center; gap: 12px; margin-bottom: 2.5rem; }
-.logo-mark {
-  width: 44px; height: 44px;
-  background: var(--accent);
-  border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
+/* Header */
+.logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 2rem;
 }
-.logo-mark svg { width: 24px; height: 24px; fill: white; }
-.logo-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-.logo-text p { font-size: 13px; color: var(--muted); }
+.logo-box {
+  width: 42px; height: 42px; background: #1a1a1a;
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+}
+.logo-box svg { width: 22px; height: 22px; fill: white; }
+.logo-name { font-size: 18px; font-weight: 700; }
+.logo-sub  { font-size: 12px; color: #888; margin-top: 2px; }
 
-/* ── Steps indicator ── */
+/* Card */
+.card {
+  background: white;
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+}
+.card-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.card-desc  { font-size: 14px; color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
+
+/* Steps */
 .steps {
-  display: flex; gap: 0; margin-bottom: 2.5rem;
-  border-radius: var(--radius); overflow: hidden;
-  border: 1px solid var(--border);
+  display: flex; border: 1px solid #e8e8e6;
+  border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem;
 }
 .step {
   flex: 1; padding: 10px 14px;
   display: flex; align-items: center; gap: 8px;
-  background: var(--surface); border-right: 1px solid var(--border);
-  font-size: 13px; color: var(--muted); cursor: pointer;
-  transition: background 0.15s;
+  font-size: 13px; font-weight: 500; color: #888;
+  background: #fafafa; border-right: 1px solid #e8e8e6;
 }
 .step:last-child { border-right: none; }
-.step.active { background: var(--accent); color: white; }
-.step.done { background: var(--green-bg); color: var(--green); }
+.step.active { background: #1a1a1a; color: white; }
+.step.done   { background: #f0fdf4; color: #16a34a; }
 .step-num {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(0,0,0,0.1); color: inherit;
+  width: 20px; height: 20px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 600; flex-shrink: 0;
+  font-size: 11px; font-weight: 700;
+  background: rgba(0,0,0,0.15); color: inherit; flex-shrink: 0;
 }
 .step.active .step-num { background: rgba(255,255,255,0.25); }
-.step.done .step-num { background: var(--green); color: white; }
-.step-label { font-weight: 500; white-space: nowrap; }
+.step.done   .step-num { background: #16a34a; color: white; }
 
-/* ── Card ── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 2rem;
-  box-shadow: var(--shadow);
-  margin-bottom: 1rem;
-}
-.card-title { font-size: 18px; font-weight: 600; margin-bottom: 0.4rem; }
-.card-desc { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; }
-
-/* ── Form ── */
-.field { margin-bottom: 1.25rem; }
-.field label {
-  display: block; font-size: 13px; font-weight: 500;
-  margin-bottom: 6px; color: var(--text);
-}
-.field .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
-input[type="text"], input[type="password"], input[type="email"], select, textarea {
-  width: 100%; padding: 10px 12px;
-  border: 1px solid var(--border); border-radius: 8px;
-  font-size: 14px; font-family: inherit; color: var(--text);
-  background: var(--surface); outline: none;
-  transition: border-color 0.15s;
-}
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-input.error { border-color: var(--red); }
-input.success { border-color: var(--green); }
-.input-group { display: flex; gap: 8px; }
-.input-group input { flex: 1; }
-
-/* ── Buttons ── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 20px; border-radius: 8px;
-  font-size: 14px; font-weight: 500; font-family: inherit;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn:hover { background: var(--bg); }
-.btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-.btn-primary:hover { background: #333; border-color: #333; }
-.btn-primary:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; transform: none; }
-.btn-sm { padding: 7px 14px; font-size: 13px; }
-.btn-full { width: 100%; }
-.btn-ghost { border-color: transparent; background: transparent; }
-.btn-ghost:hover { background: var(--bg); border-color: var(--border); }
-
-/* ── Alerts ── */
-.alert {
-  display: none; padding: 12px 14px; border-radius: 8px;
-  font-size: 13px; margin-bottom: 1rem; align-items: flex-start; gap: 10px;
-}
-.alert.show { display: flex; }
-.alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-.alert-success { background: var(--green-bg); color: var(--green); }
-.alert-error   { background: var(--red-bg);   color: var(--red);   }
-.alert-info    { background: var(--blue-bg);  color: var(--blue);  }
-.alert-warn    { background: var(--orange-bg); color: var(--orange);}
-
-/* ── Panels ── */
+/* Panel */
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* ── HubSpot token helper ── */
-.token-helper {
-  background: var(--bg); border-radius: 8px;
-  padding: 1rem 1.25rem; margin-top: 1rem; font-size: 13px;
+/* Form */
+.field { margin-bottom: 1.2rem; }
+.field label {
+  display: block; font-size: 13px; font-weight: 600;
+  margin-bottom: 6px;
 }
-.token-helper strong { display: block; margin-bottom: 8px; font-weight: 600; }
-.steps-list { padding-left: 1.2rem; }
-.steps-list li { margin-bottom: 6px; color: var(--muted); }
-.steps-list li strong { color: var(--text); font-weight: 500; }
-.code-inline {
-  background: rgba(0,0,0,0.07); border-radius: 4px;
+.field input, .field select {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #e0e0de; border-radius: 8px;
+  font-size: 14px; outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus { border-color: #1a1a1a; }
+.field input.ok  { border-color: #16a34a; background: #f0fdf4; }
+.field input.err { border-color: #dc2626; background: #fef2f2; }
+.field .hint { font-size: 12px; color: #888; margin-top: 5px; }
+
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; }
+
+/* Alert */
+.alert {
+  display: none; padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 1rem;
+  align-items: center; gap: 8px;
+}
+.alert.show { display: flex; }
+.alert.ok   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.alert.err  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.alert.info { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  border: 1.5px solid #e0e0de; background: white; color: #1a1a1a;
+  cursor: pointer; transition: all 0.12s;
+}
+.btn:hover { background: #f5f5f3; }
+.btn-primary { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+.btn-primary:hover { background: #333; }
+.btn-primary:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+
+.nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
+
+/* Mode grid */
+.mode-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1rem; }
+.mode-card {
+  border: 1.5px solid #e0e0de; border-radius: 8px;
+  padding: 14px 10px; cursor: pointer; text-align: center;
+  transition: all 0.12s;
+}
+.mode-card:hover { border-color: #888; }
+.mode-card.sel { border-color: #1a1a1a; background: #f5f5f3; }
+.mode-card input[type=radio] { display: none; }
+.mode-icon { font-size: 20px; margin-bottom: 5px; }
+.mode-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.mode-desc { font-size: 11px; color: #888; }
+
+/* Info box */
+.info-box {
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 8px; padding: 14px 16px;
+  font-size: 13px; color: #92400e;
+  margin-bottom: 1.2rem;
+}
+.info-box strong { display: block; margin-bottom: 6px; font-size: 14px; }
+.info-box ol { padding-left: 1.2rem; }
+.info-box li { margin-bottom: 4px; }
+.info-box code {
+  background: rgba(0,0,0,0.08); border-radius: 3px;
   padding: 1px 5px; font-family: monospace; font-size: 12px;
 }
 
-/* ── Scopes list ── */
-.scopes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.scope-tag {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 20px; padding: 3px 10px;
-  font-size: 11px; font-family: monospace; color: var(--muted);
+/* Success */
+.success-wrap { text-align: center; padding: 1rem 0; }
+.success-circle {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: #f0fdf4; border: 2px solid #bbf7d0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin: 0 auto 1rem;
 }
-
-/* ── Mode selector ── */
-.mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.mode-card {
-  border: 1.5px solid var(--border); border-radius: 8px;
-  padding: 14px 12px; cursor: pointer; transition: all 0.15s;
-  text-align: center;
+.success-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.success-desc { font-size: 14px; color: #666; line-height: 1.6; max-width: 380px; margin: 0 auto 1.5rem; }
+.how-to {
+  text-align: left; background: #f9f9f7;
+  border-radius: 8px; padding: 1rem 1.2rem;
+  margin-top: 1rem;
 }
-.mode-card:hover { border-color: var(--accent); }
-.mode-card.selected { border-color: var(--accent); background: #f5f5f5; }
-.mode-card input { display: none; }
-.mode-icon { font-size: 22px; margin-bottom: 6px; }
-.mode-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-.mode-desc { font-size: 11px; color: var(--muted); }
+.how-to strong { display: block; font-size: 13px; margin-bottom: 8px; }
+.how-to ol { padding-left: 1.2rem; font-size: 13px; color: #555; }
+.how-to li { margin-bottom: 5px; }
 
-/* ── Completion ── */
-.success-hero { text-align: center; padding: 1.5rem 0; }
-.success-icon {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: var(--green-bg); margin: 0 auto 1.25rem;
-  display: flex; align-items: center; justify-content: center; font-size: 30px;
-}
-.success-title { font-size: 22px; font-weight: 700; margin-bottom: 0.5rem; }
-.success-desc { font-size: 14px; color: var(--muted); max-width: 400px; margin: 0 auto 1.5rem; }
-.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-/* ── Footer ── */
-.setup-nav {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-top: 1.25rem;
-}
-
-/* ── Spinner ── */
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinner {
-  display: inline-block; width: 16px; height: 16px;
-  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+.spin {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
   border-radius: 50%; animation: spin 0.6s linear infinite;
 }
-.spinner-dark {
-  border-color: rgba(0,0,0,0.15); border-top-color: var(--accent);
-}
-
-/* ── Animated check ── */
-@keyframes checkDraw { to { stroke-dashoffset: 0; } }
 </style>
 </head>
 <body>
-<div class="page">
+<div class="wrap">
 
   <!-- Logo -->
   <div class="logo">
-    <div class="logo-mark">
+    <div class="logo-box">
       <svg viewBox="0 0 24 24"><path d="M3 4h18v2H3zM3 9h12v2H3zM3 14h15v2H3zM3 19h10v2H3z"/></svg>
     </div>
-    <div class="logo-text">
-      <h1>Prospector → HubSpot</h1>
-      <p>Configuration initiale</p>
+    <div>
+      <div class="logo-name">Prospector → HubSpot</div>
+      <div class="logo-sub">Configuration de l'extension</div>
     </div>
   </div>
 
-  <!-- Steps -->
+  <!-- Steps bar -->
   <div class="steps" id="steps-bar">
-    <div class="step active" data-step="1">
-      <div class="step-num">1</div>
-      <span class="step-label">Connexion HubSpot</span>
-    </div>
-    <div class="step" data-step="2">
-      <div class="step-num">2</div>
-      <span class="step-label">Préférences</span>
-    </div>
-    <div class="step" data-step="3">
-      <div class="step-num">3</div>
-      <span class="step-label">Terminé</span>
-    </div>
+    <div class="step active"><div class="step-num">1</div> Token HubSpot</div>
+    <div class="step"><div class="step-num">2</div> Préférences</div>
+    <div class="step"><div class="step-num">3</div> Prêt ✓</div>
   </div>
 
-  <!-- ── STEP 1 : HubSpot API ── -->
+  <!-- ── STEP 1 ── -->
   <div class="panel active" id="panel-1">
     <div class="card">
-      <div class="card-title">Connecte ton compte HubSpot</div>
-      <div class="card-desc">
-        Crée une application privée HubSpot pour obtenir ton token d'accès. C'est gratuit et ne prend que 2 minutes.
-      </div>
+      <div class="card-title">Connecte ton HubSpot</div>
+      <div class="card-desc">Entre ton token d'accès HubSpot pour permettre à l'extension d'importer les prospects.</div>
 
       <div id="alert-1" class="alert"></div>
 
+      <div class="info-box">
+        <strong>📋 Comment obtenir ton token :</strong>
+        <ol>
+          <li>Connecte-toi sur <strong>app.hubspot.com</strong></li>
+          <li>Clique ton avatar (haut droite) → <strong>Intégrations</strong></li>
+          <li>Dans le menu gauche → <strong>Applications privées</strong></li>
+          <li>Clique <strong>Créer une application privée</strong></li>
+          <li>Onglet <strong>Portées</strong> → coche <code>crm.objects.contacts.read</code> et <code>crm.objects.contacts.write</code></li>
+          <li>Clique <strong>Créer</strong> → copie le token affiché</li>
+        </ol>
+      </div>
+
       <div class="field">
-        <label>Token d'accès HubSpot (Private App Token)</label>
-        <div class="input-group">
-          <input type="password" id="hs-token" placeholder="pat-eu1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+        <label>Token d'accès HubSpot</label>
+        <div class="input-row">
+          <input type="password" id="hs-token" placeholder="pat-eu1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
           <button class="btn btn-sm" id="btn-test" onclick="testConnection()">Tester</button>
         </div>
-        <div class="hint">Commence par <code class="code-inline">pat-eu1-</code> (Europe) ou <code class="code-inline">pat-na1-</code> (USA)</div>
+        <div class="hint">Le token commence par <code style="font-family:monospace;font-size:11px;background:#f0f0ee;padding:1px 4px;border-radius:3px">pat-eu1-</code> (Europe) ou <code style="font-family:monospace;font-size:11px;background:#f0f0ee;padding:1px 4px;border-radius:3px">pat-na1-</code> (USA)</div>
       </div>
 
-      <div class="field">
-        <label>Région HubSpot</label>
-        <select id="hs-region">
-          <option value="eu1">🇪🇺 Europe (eu1) — par défaut</option>
-          <option value="na1">🇺🇸 Amérique du Nord (na1)</option>
-        </select>
-      </div>
-
-      <!-- Instructions -->
-      <div class="token-helper">
-        <strong>Comment créer ton token :</strong>
-        <ol class="steps-list">
-          <li>Va dans <strong>Paramètres HubSpot</strong> → <strong>Intégrations</strong> → <strong>Applications privées</strong></li>
-          <li>Clique <strong>Créer une application privée</strong></li>
-          <li>Donne un nom : <code class="code-inline">Prospector Extension</code></li>
-          <li>Dans <strong>Portées (Scopes)</strong>, coche :</li>
-        </ol>
-        <div class="scopes">
-          <span class="scope-tag">crm.objects.contacts.read</span>
-          <span class="scope-tag">crm.objects.contacts.write</span>
-          <span class="scope-tag">crm.schemas.contacts.read</span>
-        </div>
-        <br>
-        <ol class="steps-list" start="5">
-          <li>Clique <strong>Créer l'application</strong> et copie le token généré ici</li>
-        </ol>
-        <a href="https://app.hubspot.com/private-apps" target="_blank" class="btn btn-sm" style="margin-top:10px; text-decoration:none;">
-          Ouvrir HubSpot →
-        </a>
-      </div>
-
-      <div class="setup-nav">
-        <span></span>
-        <button class="btn btn-primary" onclick="goStep(2)" id="btn-next-1" disabled>
-          Continuer →
-        </button>
+      <div class="nav">
+        <span style="font-size:12px;color:#888">Étape 1 sur 2</span>
+        <button class="btn btn-primary" id="btn-next-1" onclick="goStep(2)" disabled>Continuer →</button>
       </div>
     </div>
   </div>
 
-  <!-- ── STEP 2 : Préférences ── -->
+  <!-- ── STEP 2 ── -->
   <div class="panel" id="panel-2">
     <div class="card">
       <div class="card-title">Préférences d'import</div>
-      <div class="card-desc">Comment Prospector doit-il gérer les contacts déjà présents dans HubSpot ?</div>
+      <div class="card-desc">Comment gérer les contacts déjà présents dans HubSpot ?</div>
 
       <div class="field">
         <label>Mode d'import</label>
         <div class="mode-grid">
-          <label class="mode-card selected">
-            <input type="radio" name="import-mode" value="upsert" checked>
+          <label class="mode-card sel" onclick="selectMode(this)">
+            <input type="radio" name="mode" value="upsert" checked>
             <div class="mode-icon">🔄</div>
             <div class="mode-name">Mettre à jour</div>
             <div class="mode-desc">Crée les nouveaux, met à jour les existants</div>
           </label>
-          <label class="mode-card">
-            <input type="radio" name="import-mode" value="skip">
+          <label class="mode-card" onclick="selectMode(this)">
+            <input type="radio" name="mode" value="skip">
             <div class="mode-icon">⏭</div>
             <div class="mode-name">Ignorer</div>
             <div class="mode-desc">Crée seulement les contacts absents</div>
           </label>
-          <label class="mode-card">
-            <input type="radio" name="import-mode" value="always">
+          <label class="mode-card" onclick="selectMode(this)">
+            <input type="radio" name="mode" value="always">
             <div class="mode-icon">➕</div>
             <div class="mode-name">Toujours créer</div>
-            <div class="mode-desc">Importe tout sans vérification</div>
+            <div class="mode-desc">Importe tout sans vérifier</div>
           </label>
         </div>
       </div>
 
       <div class="field">
-        <label>Délai entre chaque import (ms)</label>
+        <label>Délai entre imports</label>
         <select id="import-delay">
-          <option value="150">Rapide — 150ms (risque rate limit)</option>
+          <option value="150">Rapide — 150ms</option>
           <option value="300" selected>Normal — 300ms (recommandé)</option>
           <option value="600">Lent — 600ms (grande liste)</option>
-          <option value="1000">Très lent — 1s (plan gratuit)</option>
+          <option value="1000">Très lent — 1s (plan gratuit HubSpot)</option>
         </select>
-        <div class="hint">HubSpot limite à ~10 requêtes/seconde sur les plans gratuits</div>
       </div>
 
       <div class="field">
         <label>Pagination automatique</label>
         <select id="auto-paginate">
-          <option value="yes" selected>Oui — collecter toutes les pages automatiquement</option>
+          <option value="yes" selected>Oui — parcourir toutes les pages</option>
           <option value="no">Non — seulement la page visible</option>
         </select>
       </div>
 
-      <div class="field">
-        <label>Source par défaut (tag CRM)</label>
-        <input type="text" id="default-source" placeholder="Extension Prospector" value="Extension Prospector" />
-        <div class="hint">Apparaît dans le champ "Source" de chaque contact HubSpot</div>
-      </div>
-
-      <div class="setup-nav">
-        <button class="btn btn-ghost" onclick="goStep(1)">← Retour</button>
-        <button class="btn btn-primary" onclick="saveAndFinish()">
-          Enregistrer et terminer →
-        </button>
+      <div class="nav">
+        <button class="btn" onclick="goStep(1)">← Retour</button>
+        <button class="btn btn-primary" onclick="saveAndFinish()">Enregistrer →</button>
       </div>
     </div>
   </div>
 
-  <!-- ── STEP 3 : Done ── -->
+  <!-- ── STEP 3 ── -->
   <div class="panel" id="panel-3">
     <div class="card">
-      <div class="success-hero">
-        <div class="success-icon">✓</div>
-        <div class="success-title">Tout est prêt !</div>
-        <div class="success-desc">
-          Prospector est connecté à ton HubSpot. Navigue sur n'importe quelle page avec une liste de contacts
-          et clique sur l'icône de l'extension pour lancer l'import.
-        </div>
+      <div class="success-wrap">
+        <div class="success-circle">✓</div>
+        <div class="success-title">Extension prête !</div>
+        <div class="success-desc">Prospector est connecté à ton HubSpot. Tu peux maintenant importer des prospects depuis n'importe quelle page.</div>
+        <button class="btn btn-primary" onclick="window.close()">Fermer et utiliser →</button>
       </div>
 
-      <div class="action-grid">
-        <button class="btn" onclick="window.close()">Fermer</button>
-        <button class="btn btn-primary" onclick="openExtension()">Ouvrir l'extension →</button>
-      </div>
-
-      <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border);">
-        <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
-          <strong style="color:var(--text)">Comment utiliser :</strong>
-        </p>
-        <ol class="steps-list" style="font-size:13px;">
+      <div class="how-to">
+        <strong>Comment utiliser :</strong>
+        <ol>
           <li>Va sur une page avec une liste de prospects (CRM, portail, tableau...)</li>
           <li>Clique sur l'icône <strong>Prospector</strong> dans ta barre d'extensions</li>
-          <li>Clique <strong>"Scanner"</strong> — les contacts sont détectés automatiquement</li>
-          <li>Clique <strong>"Importer dans HubSpot"</strong></li>
+          <li>Clique <strong>Scanner</strong> — les contacts sont détectés automatiquement</li>
+          <li>Clique <strong>Importer dans HubSpot</strong></li>
         </ol>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:1rem;">
-      <p style="font-size:13px; font-weight:600; margin-bottom:10px;">Modifier la configuration</p>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn btn-sm" onclick="goStep(1)">Changer le token HubSpot</button>
-        <button class="btn btn-sm" onclick="goStep(2)">Modifier les préférences</button>
       </div>
     </div>
   </div>
 
 </div>
-
 <script src="setup.js"></script>
 </body>
 </html>
