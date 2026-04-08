@@ -42,7 +42,10 @@ async function testConnection() {
     return;
   }
 
-  btn.innerHTML = '<span class="spinner"></span>';
+  btn.textContent = '';
+  const sp = document.createElement('span');
+  sp.className = 'spinner';
+  btn.appendChild(sp);
   btn.disabled = true;
   showAlert(1, 'info', '⏳', 'Test de connexion en cours...');
 
@@ -130,7 +133,14 @@ function showAlert(step, type, icon, msg) {
   const el = document.getElementById(`alert-${step}`);
   if (!el) return;
   el.className = `alert alert-${type} show`;
-  el.innerHTML = `<span class="alert-icon">${icon}</span><span>${msg}</span>`;
+  el.textContent = '';
+  const iconEl = document.createElement('span');
+  iconEl.className = 'alert-icon';
+  iconEl.textContent = icon;
+  const msgEl = document.createElement('span');
+  msgEl.textContent = msg;
+  el.appendChild(iconEl);
+  el.appendChild(msgEl);
 }
 
 function openExtension() {

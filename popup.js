@@ -332,9 +332,7 @@ function renderList() {
   listWrap.innerHTML = '';
   const frag = document.createDocumentFragment();
   prospects.forEach(p => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = itemHTML(p); // trusted internal HTML
-    frag.appendChild(tmp.firstChild);
+    frag.appendChild(buildProspectEl(p));
   });
   listWrap.appendChild(frag);
 
@@ -345,10 +343,54 @@ function renderList() {
 function renderItem(p) {
   const el = document.getElementById('item-' + CSS.escape(pid(p)));
   if (el) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = itemHTML(p); // trusted internal HTML
-    el.parentNode.replaceChild(tmp.firstChild, el);
+    el.parentNode.replaceChild(buildProspectEl(p), el);
   }
+}
+
+
+// Build prospect DOM element safely (no innerHTML with user data)
+function buildProspectEl(p) {
+  const id  = pid(p);
+  const st  = statuses[id] || 'pending';
+  const ini = initials(p);
+  const sub = [p.company, p.email, p.phone].filter(Boolean)[0] || p.source || '';
+
+  const row = document.createElement('div');
+  row.className = 'prospect-item';
+  row.id = 'item-' + id;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = ini;
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const name = document.createElement('div');
+  name.className = 'info-name';
+  name.textContent = displayName(p);
+  const subEl = document.createElement('div');
+  subEl.className = 'info-sub';
+  subEl.textContent = sub;
+  info.appendChild(name);
+  info.appendChild(subEl);
+
+  const badge = document.createElement('span');
+  const badgeMap = {
+    pending: ['status-badge badge-pending', 'En attente'],
+    syncing: ['status-badge badge-syncing', '...'],
+    created: ['status-badge badge-created', 'Créé ✓'],
+    updated: ['status-badge badge-updated', 'Mis à jour'],
+    exists:  ['status-badge badge-exists',  'Déjà présent'],
+    error:   ['status-badge badge-error',   'Erreur'],
+  };
+  const [cls, txt] = badgeMap[st] || badgeMap.pending;
+  badge.className = cls;
+  badge.textContent = txt;
+
+  row.appendChild(avatar);
+  row.appendChild(info);
+  row.appendChild(badge);
+  return row;
 }
 
 function itemHTML(p) {
