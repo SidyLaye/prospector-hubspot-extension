@@ -1,3 +1,6 @@
+// Polyfill browser/chrome API
+const api = (typeof browser !== 'undefined') ? browser : chrome;
+
 // popup.js — Prospector Extension
 
 const HS_API      = 'https://api.hubapi.com';
@@ -26,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadSettings() {
-  return chrome.storage.local.get([
+  return api.storage.local.get([
     'hs_token', 'hs_region', 'import_mode', 'import_delay',
     'auto_paginate', 'default_source', 'cached_prospects', 'cached_statuses'
   ]);
@@ -35,7 +38,7 @@ async function loadSettings() {
 // ── Listen collect updates from content script ─────────────────────────────
 
 function listenMessages() {
-  chrome.runtime.onMessage.addListener((msg) => {
+  api.runtime.onMessage.addListener((msg) => {
     if (msg.action === 'collect_update') {
       prospects = msg.prospects || [];
       initStatuses();
@@ -53,7 +56,7 @@ async function checkPage() {
   const text = document.getElementById('status-text');
 
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await api.tabs.query({ active: true, currentWindow: true });
 
     if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('moz-extension://')) {
       dot.className = 'dot red';
@@ -63,7 +66,7 @@ async function checkPage() {
     }
 
     // Ping content script
-    const resp = await chrome.tabs.sendMessage(tab.id, { action: 'ping' }).catch(() => null);
+    const resp = await api.tabs.sendMessage(tab.id, { action: 'ping' }).catch(() => null);
     if (resp?.ok) {
       dot.className = 'dot green';
       text.textContent = tab.url.replace(/^https?:\/\//, '').substring(0, 48);
@@ -93,7 +96,7 @@ async function loadCached() {
 }
 
 async function saveCache() {
-  await chrome.storage.local.set({ cached_prospects: prospects, cached_statuses: statuses });
+  await api.storage.local.set({ cached_prospects: prospects, cached_statuses: statuses });
 }
 
 // ── Scan ──────────────────────────────────────────────────────────────────────
@@ -117,20 +120,20 @@ async function scan() {
   stopRequested = false;
 
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await api.tabs.query({ active: true, currentWindow: true });
     const paginate = settings.auto_paginate !== false;
 
     if (paginate) {
       document.getElementById('collecting-bar').classList.add('active');
       log('Scan multi-pages démarré...', 'info');
 
-      const resp = await chrome.tabs.sendMessage(tab.id, { action: 'collect_all' });
+      const resp = await api.tabs.sendMessage(tab.id, { action: 'collect_all' });
       if (resp?.done) {
         prospects = resp.prospects || [];
         log(`Terminé — ${prospects.length} prospect(s) collecté(s)`, 'ok');
       }
     } else {
-      const resp = await chrome.tabs.sendMessage(tab.id, { action: 'detect' });
+      const resp = await api.tabs.sendMessage(tab.id, { action: 'detect' });
       prospects = resp?.prospects || [];
       log(`Page courante — ${prospects.length} prospect(s) détecté(s)`, 'info');
     }
@@ -492,13 +495,13 @@ function toggleLog() {
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 function openSetup() {
-  chrome.runtime.openOptionsPage();
+  api.runtime.openOptionsPage();
 }
 
 function clearAll() {
   prospects = [];
   statuses  = {};
-  chrome.storage.local.remove(['cached_prospects', 'cached_statuses']);
+  api.storage.local.remove(['cached_prospects', 'cached_statuses']);
   showEmpty();
   updateStats();
   document.getElementById('btn-import').disabled = true;

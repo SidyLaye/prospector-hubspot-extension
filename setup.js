@@ -1,16 +1,21 @@
+// setup.js — Prospector Setup Page
+// Compatible Chrome MV3 + Firefox MV2
+
+// Polyfill : utilise "browser" si dispo (Firefox), sinon "chrome"
+const api = (typeof browser !== 'undefined') ? browser : chrome;
 
 let currentStep = 1;
 let connectionOk = false;
 
-// ── Navigation ───────────────────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────────────────────
 
 function goStep(n) {
-  if (n > currentStep && !connectionOk && n > 1) return;
+  if (n > 1 && !connectionOk) return;
 
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(`panel-${n}`).classList.add('active');
+  document.getElementById('panel-' + n).classList.add('active');
 
-  document.querySelectorAll('.step').forEach((s, i) => {
+  document.querySelectorAll('.step').forEach(function(s, i) {
     s.classList.remove('active', 'done');
     if (i + 1 < n) s.classList.add('done');
     if (i + 1 === n) s.classList.add('active');
@@ -19,17 +24,19 @@ function goStep(n) {
   currentStep = n;
 }
 
-// ── Mode cards ───────────────────────────────────────────────────────────────
+// ── Mode cards ────────────────────────────────────────────────────────────────
 
-document.querySelectorAll('.mode-card').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+document.querySelectorAll('.mode-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    document.querySelectorAll('.mode-card').forEach(function(c) {
+      c.classList.remove('selected');
+    });
     card.classList.add('selected');
     card.querySelector('input').checked = true;
   });
 });
 
-// ── Test connexion HubSpot ───────────────────────────────────────────────────
+// ── Test connexion HubSpot ────────────────────────────────────────────────────
 
 async function testConnection() {
   const token = document.getElementById('hs-token').value.trim();
@@ -42,16 +49,17 @@ async function testConnection() {
     return;
   }
 
-  btn.textContent = '';
-  const sp = document.createElement('span');
-  sp.className = 'spinner';
-  btn.appendChild(sp);
+  btn.textContent = '...';
   btn.disabled = true;
   showAlert(1, 'info', '⏳', 'Test de connexion en cours...');
 
   try {
     const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', {
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
     });
 
     if (res.ok) {
@@ -61,78 +69,95 @@ async function testConnection() {
       connectionOk = true;
       next.disabled = false;
 
-      // Sauvegarder le token
-      await chrome.storage.local.set({ hs_token: token, hs_region: document.getElementById('hs-region').value });
+      // Sauvegarder via l'API extension
+      const region = document.getElementById('hs-region').value;
+      await api.storage.local.set({ hs_token: token, hs_region: region });
 
       showAlert(1, 'success', '✓',
-        `Connexion réussie — ${data.total ?? '?'} contact(s) dans ton HubSpot.`
+        'Connexion réussie — ' + (data.total || '?') + ' contact(s) dans ton HubSpot.'
       );
+
     } else {
-      const err = await res.json().catch(() => ({}));
+      const err = await res.json().catch(function() { return {}; });
       input.classList.add('error');
       input.classList.remove('success');
       connectionOk = false;
       next.disabled = true;
 
-      let msg = err.message || `Erreur HTTP ${res.status}`;
-      if (res.status === 401) msg = 'Token invalide ou expiré. Vérifie tes paramètres d\'application privée.';
-      if (res.status === 403) msg = 'Permissions insuffisantes. Ajoute les scopes contacts.read et contacts.write.';
+      let msg = err.message || ('Erreur HTTP ' + res.status);
+      if (res.status === 401) msg = 'Token invalide — vérifie que tu as bien copié le token complet.';
+      if (res.status === 403) msg = 'Permissions insuffisantes — ajoute les scopes crm.objects.contacts.read et .write.';
       showAlert(1, 'error', '✗', msg);
     }
+
   } catch (e) {
-    showAlert(1, 'error', '✗', `Impossible de joindre HubSpot : ${e.message}`);
+    // CORS ou réseau
+    showAlert(1, 'error', '✗', 'Erreur réseau : ' + e.message + '. Vérifie que tu es connecté à internet.');
   }
 
   btn.textContent = 'Tester';
   btn.disabled = false;
 }
 
-// ── Save & Finish ────────────────────────────────────────────────────────────
+// ── Save & Finish ─────────────────────────────────────────────────────────────
 
 async function saveAndFinish() {
-  const mode    = document.querySelector('input[name="import-mode"]:checked')?.value || 'upsert';
-  const delay   = parseInt(document.getElementById('import-delay').value);
+  const modeEl = document.querySelector('input[name="import-mode"]:checked');
+  const mode   = modeEl ? modeEl.value : 'upsert';
+  const delay  = parseInt(document.getElementById('import-delay').value) || 300;
   const paginate = document.getElementById('auto-paginate').value === 'yes';
-  const source  = document.getElementById('default-source').value.trim() || 'Extension Prospector';
+  const source = document.getElementById('default-source').value.trim() || 'Prospector Extension';
 
-  await chrome.storage.local.set({ import_mode: mode, import_delay: delay, auto_paginate: paginate, default_source: source });
+  await api.storage.local.set({
+    import_mode: mode,
+    import_delay: delay,
+    auto_paginate: paginate,
+    default_source: source
+  });
 
   goStep(3);
 }
 
-// ── Load saved settings ──────────────────────────────────────────────────────
+// ── Load saved settings ───────────────────────────────────────────────────────
 
 async function loadSettings() {
-  const data = await chrome.storage.local.get(['hs_token', 'hs_region', 'import_mode', 'import_delay', 'auto_paginate', 'default_source']);
+  try {
+    const data = await api.storage.local.get([
+      'hs_token', 'hs_region', 'import_mode',
+      'import_delay', 'auto_paginate', 'default_source'
+    ]);
 
-  if (data.hs_token) {
-    document.getElementById('hs-token').value = data.hs_token;
-    document.getElementById('hs-token').classList.add('success');
-    connectionOk = true;
-    document.getElementById('btn-next-1').disabled = false;
-  }
+    if (data.hs_token) {
+      document.getElementById('hs-token').value = data.hs_token;
+      document.getElementById('hs-token').classList.add('success');
+      connectionOk = true;
+      document.getElementById('btn-next-1').disabled = false;
+    }
 
-  if (data.hs_region) document.getElementById('hs-region').value = data.hs_region;
-  if (data.import_delay) document.getElementById('import-delay').value = data.import_delay;
-  if (data.auto_paginate === false) document.getElementById('auto-paginate').value = 'no';
-  if (data.default_source) document.getElementById('default-source').value = data.default_source;
+    if (data.hs_region) document.getElementById('hs-region').value = data.hs_region;
+    if (data.import_delay) document.getElementById('import-delay').value = data.import_delay;
+    if (data.auto_paginate === false) document.getElementById('auto-paginate').value = 'no';
+    if (data.default_source) document.getElementById('default-source').value = data.default_source;
 
-  if (data.import_mode) {
-    document.querySelectorAll('.mode-card').forEach(c => {
-      const inp = c.querySelector('input');
-      const isMatch = inp.value === data.import_mode;
-      c.classList.toggle('selected', isMatch);
-      inp.checked = isMatch;
-    });
+    if (data.import_mode) {
+      document.querySelectorAll('.mode-card').forEach(function(c) {
+        const inp = c.querySelector('input');
+        const match = inp.value === data.import_mode;
+        c.classList.toggle('selected', match);
+        inp.checked = match;
+      });
+    }
+  } catch(e) {
+    console.warn('Storage non disponible:', e.message);
   }
 }
 
-// ── Utils ────────────────────────────────────────────────────────────────────
+// ── Utils ─────────────────────────────────────────────────────────────────────
 
 function showAlert(step, type, icon, msg) {
-  const el = document.getElementById(`alert-${step}`);
+  const el = document.getElementById('alert-' + step);
   if (!el) return;
-  el.className = `alert alert-${type} show`;
+  el.className = 'alert alert-' + type + ' show';
   el.textContent = '';
   const iconEl = document.createElement('span');
   iconEl.className = 'alert-icon';
@@ -147,10 +172,16 @@ function openExtension() {
   window.close();
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-loadSettings();
+function openHubspot() {
+  window.open('https://app.hubspot.com/private-apps', '_blank');
+}
 
-// Enter to test
-document.getElementById('hs-token').addEventListener('keydown', e => {
-  if (e.key === 'Enter') testConnection();
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSettings();
+
+  document.getElementById('hs-token').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') testConnection();
+  });
 });
