@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Prospector</title>
+<style>
+:root {
+  --bg: #f8f8f6;
+  --surface: #fff;
+  --border: #e5e5e2;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1a1a1a;
+  --green: #16a34a; --green-bg: #dcfce7;
+  --red: #dc2626;   --red-bg:   #fee2e2;
+  --blue: #2563eb;  --blue-bg:  #dbeafe;
+  --amber: #d97706; --amber-bg: #fef3c7;
+  --gray-bg: #f3f4f6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 400px; min-height: 180px; max-height: 600px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--surface);
+  display: flex; flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-icon {
+  width: 26px; height: 26px; background: var(--accent); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-icon svg { width: 14px; height: 14px; fill: white; }
+.brand-name { font-weight: 600; font-size: 13px; }
+.header-actions { display: flex; gap: 4px; }
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: none; background: none; cursor: pointer; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.icon-btn:hover { background: var(--bg); color: var(--text); }
+
+/* ── Status bar ── */
+.status-bar {
+  padding: 8px 14px; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.dot.green { background: var(--green); }
+.dot.red   { background: var(--red);   }
+.dot.amber { background: var(--amber); }
+
+/* ── Stats ── */
+.stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; flex-shrink: 0;
+}
+.stat { padding: 8px 10px; text-align: center; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-val { font-size: 18px; font-weight: 600; line-height: 1; margin-bottom: 2px; }
+.stat-val.blue  { color: var(--blue);  }
+.stat-val.green { color: var(--green); }
+.stat-val.amber { color: var(--amber); }
+.stat-val.red   { color: var(--red);   }
+.stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* ── Toolbar ── */
+.toolbar {
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  display: flex; gap: 6px; flex-shrink: 0;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px;
+  border-radius: 6px; font-size: 12px; font-weight: 500; font-family: inherit;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.btn:hover { background: var(--bg); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); flex: 1; justify-content: center; }
+.btn-primary:hover { background: #333; border-color: #333; }
+.btn-primary:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; transform: none; }
+.btn-danger { color: var(--red); border-color: var(--red-bg); }
+.btn-danger:hover { background: var(--red-bg); }
+
+/* ── Progress bar ── */
+.progress-wrap {
+  height: 3px; background: var(--border); flex-shrink: 0;
+}
+.progress-bar {
+  height: 100%; background: var(--blue);
+  transition: width 0.3s; width: 0%;
+}
+
+/* ── List ── */
+.list-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+
+.prospect-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.prospect-item:last-child { border-bottom: none; }
+.prospect-item:hover { background: var(--bg); }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  flex-shrink: 0; text-transform: uppercase;
+}
+
+.info { flex: 1; min-width: 0; }
+.info-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.info-sub  { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.status-badge {
+  font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 10px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.badge-pending  { background: var(--gray-bg);  color: var(--muted); }
+.badge-syncing  { background: var(--blue-bg);  color: var(--blue); }
+.badge-created  { background: var(--green-bg); color: var(--green); }
+.badge-updated  { background: var(--amber-bg); color: var(--amber); }
+.badge-exists   { background: var(--gray-bg);  color: var(--muted); }
+.badge-error    { background: var(--red-bg);   color: var(--red); }
+
+/* ── Empty state ── */
+.empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2.5rem 1.5rem; text-align: center; gap: 8px;
+}
+.empty-icon { font-size: 32px; opacity: 0.5; }
+.empty-title { font-weight: 600; font-size: 14px; }
+.empty-desc { font-size: 12px; color: var(--muted); line-height: 1.5; max-width: 260px; }
+
+/* ── Footer ── */
+.footer {
+  padding: 8px 14px; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0; background: var(--bg);
+}
+.footer-left { font-size: 11px; color: var(--muted); }
+.footer-right { display: flex; gap: 4px; }
+
+/* ── Log ── */
+.log-panel {
+  display: none; border-top: 1px solid var(--border);
+  background: #1a1a1a; max-height: 100px; overflow-y: auto; flex-shrink: 0;
+}
+.log-panel.open { display: block; }
+.log-line {
+  padding: 2px 12px; font-family: monospace; font-size: 11px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.log-ok   { color: #4ade80; }
+.log-err  { color: #f87171; }
+.log-info { color: #94a3b8; }
+.log-warn { color: #fbbf24; }
+
+/* ── No-config banner ── */
+.config-banner {
+  padding: 12px 14px; background: var(--amber-bg);
+  border-bottom: 1px solid #fde68a; font-size: 12px; color: var(--amber);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block; width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+  border-radius: 50%; animation: spin 0.5s linear infinite;
+}
+.spinner-dark { border-color: rgba(0,0,0,0.1); border-top-color: var(--blue); }
+
+/* ── Collecting animation ── */
+.collecting-bar {
+  height: 2px; background: linear-gradient(90deg, transparent 0%, var(--blue) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: sweep 1.5s linear infinite;
+  display: none;
+}
+.collecting-bar.active { display: block; }
+@keyframes sweep { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 4h18v2H3zM3 9h12v2H3zM3 14h15v2H3zM3 19h10v2H3z"/></svg>
+    </div>
+    <span class="brand-name">Prospector</span>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="btn-log" title="Voir les logs" onclick="toggleLog()">≡</button>
+    <button class="icon-btn" title="Paramètres" onclick="openSetup()">⚙</button>
+  </div>
+</div>
+
+<!-- Config warning -->
+<div class="config-banner" id="config-banner" style="display:none">
+  ⚠ Token HubSpot non configuré —
+  <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openSetup()">Configurer →</button>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <div class="dot" id="status-dot"></div>
+  <span id="status-text">Vérification...</span>
+</div>
+
+<!-- Collecting animation -->
+<div class="collecting-bar" id="collecting-bar"></div>
+
+<!-- Stats -->
+<div class="stats" id="stats-row" style="display:none; border-bottom:1px solid var(--border)">
+  <div class="stat"><div class="stat-val blue"  id="s-detected">0</div><div class="stat-lbl">Détectés</div></div>
+  <div class="stat"><div class="stat-val green"  id="s-created">0</div><div class="stat-lbl">Créés</div></div>
+  <div class="stat"><div class="stat-val amber"  id="s-updated">0</div><div class="stat-lbl">Mis à jour</div></div>
+  <div class="stat"><div class="stat-val red"    id="s-errors">0</div><div class="stat-lbl">Erreurs</div></div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-wrap" id="progress-wrap" style="display:none">
+  <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button class="btn" id="btn-scan" onclick="scan()">
+    <span>🔍</span> Scanner
+  </button>
+  <button class="btn btn-primary" id="btn-import" onclick="importAll()" disabled>
+    Importer dans HubSpot
+  </button>
+</div>
+
+<!-- List -->
+<div class="list-wrap" id="list-wrap">
+  <div class="empty">
+    <div class="empty-icon">📋</div>
+    <div class="empty-title">Aucun prospect détecté</div>
+    <div class="empty-desc">Navigue sur une page avec une liste de contacts et clique sur Scanner</div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer" id="footer" style="display:none">
+  <div class="footer-left" id="footer-text"></div>
+  <div class="footer-right">
+    <button class="btn btn-danger" style="font-size:11px; padding:4px 10px" onclick="clearAll()">Effacer</button>
+  </div>
+</div>
+
+<!-- Log panel -->
+<div class="log-panel" id="log-panel"></div>
+
+<script src="popup.js"></script>
+</body>
+</html>

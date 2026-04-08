@@ -1,0 +1,22 @@
+{
+  "name": "prospector-hubspot-extension",
+  "version": "1.0.0",
+  "description": "Universal prospect detector and HubSpot importer browser extension",
+  "scripts": {
+    "build": "bash build.sh",
+    "dev:chrome": "web-ext run --source-dir=. --browser-console",
+    "dev:firefox": "web-ext run --source-dir=. --overrides-source=manifest.firefox.json",
+    "lint": "web-ext lint --source-dir=.",
+    "sign:firefox": "web-ext sign --source-dir=. --api-key=$AMO_KEY --api-secret=$AMO_SECRET"
+  },
+  "devDependencies": {
+    "web-ext": "^7.0.0"
+  },
+  "keywords": ["hubspot", "crm", "extension", "prospects", "leads", "browser"],
+  "author": "AMBS Agency",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SidyLaye/prospector-hubspot-extension"
+  }
+}
