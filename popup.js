@@ -24,6 +24,19 @@ async function initPopup() {
   await checkPage();
   await loadCached();
   listenMessages();
+
+  // Attacher les event listeners ici — DOM garanti prêt
+  var btnScan   = document.getElementById('btn-scan');
+  var btnImport = document.getElementById('btn-import');
+  var btnLog    = document.getElementById('btn-log');
+  var btnClear  = document.querySelector('.btn-danger');
+  var btnSettings = document.querySelectorAll('[title="Paramètres"]');
+
+  if (btnScan)   btnScan.addEventListener('click', scan);
+  if (btnImport) btnImport.addEventListener('click', importAll);
+  if (btnLog)    btnLog.addEventListener('click', toggleLog);
+  if (btnClear)  btnClear.addEventListener('click', clearAll);
+  btnSettings.forEach(function(el) { el.addEventListener('click', openSetup); });
 }
 
 if (document.readyState === 'loading') {
@@ -511,22 +524,4 @@ function clearAll() {
   document.getElementById('btn-import').disabled = true;
   document.getElementById('stats-row').style.display = 'none';
 }
-// ── Event listeners (pas de onclick dans le HTML — bloqué par CSP MV3) ──────
-(function attachListeners() {
-  var btnScan   = document.getElementById('btn-scan');
-  var btnImport = document.getElementById('btn-import');
-  var btnLog    = document.getElementById('btn-log');
-  var btnClear  = document.querySelector('[onclick*="clearAll"]') || 
-                  document.querySelector('.btn-danger');
 
-  if (btnScan)   btnScan.addEventListener('click', scan);
-  if (btnImport) btnImport.addEventListener('click', importAll);
-  if (btnLog)    btnLog.addEventListener('click', toggleLog);
-  if (btnClear)  btnClear.addEventListener('click', clearAll);
-
-  // Settings buttons
-  document.querySelectorAll('[title="Paramètres"], [onclick*="openSetup"]').forEach(function(el) {
-    el.removeAttribute('onclick');
-    el.addEventListener('click', openSetup);
-  });
-})();

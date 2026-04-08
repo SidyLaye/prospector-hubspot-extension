@@ -67,8 +67,5 @@
     "128": "icons/icon128.png"
   },
   "homepage_url": "https://ambs-agency.com",
-  "options_page": "setup.html",
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
-  }
+  "options_page": "setup.html"
 }
