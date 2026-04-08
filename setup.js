@@ -101,15 +101,15 @@ function loadSettings() {
 }
 
 // ── Attacher les événements ────────────────────────────────────────────────
-document.getElementById('btn-test').onclick = testConnection;
-document.getElementById('btn-next-1').onclick = function() { goStep(2); };
-document.getElementById('btn-back').onclick = function() { goStep(1); };
-document.getElementById('btn-save').onclick = saveAndFinish;
-document.getElementById('btn-close').onclick = function() { window.close(); };
-document.getElementById('mode-upsert').onclick = function() { selectMode('upsert'); };
-document.getElementById('mode-skip').onclick = function() { selectMode('skip'); };
-document.getElementById('mode-always').onclick = function() { selectMode('always'); };
-document.getElementById('hs-token').onkeydown = function(e) { if (e.key === 'Enter') testConnection(); };
+document.getElementById('btn-test').addEventListener('click', testConnection);
+document.getElementById('btn-next-1').addEventListener('click', function() { goStep(2); });
+document.getElementById('btn-back').addEventListener('click', function() { goStep(1); });
+document.getElementById('btn-save').addEventListener('click', saveAndFinish);
+document.getElementById('btn-close').addEventListener('click', function() { window.close(); });
+document.getElementById('mode-upsert').addEventListener('click', function() { selectMode('upsert'); });
+document.getElementById('mode-skip').addEventListener('click', function() { selectMode('skip'); });
+document.getElementById('mode-always').addEventListener('click', function() { selectMode('always'); });
+document.getElementById('hs-token').addEventListener('keydown', function(e) { if (e.key === 'Enter') testConnection(); });
 
 // ── Init ──────────────────────────────────────────────────────────────────
 loadSettings();

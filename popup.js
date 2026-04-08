@@ -511,3 +511,22 @@ function clearAll() {
   document.getElementById('btn-import').disabled = true;
   document.getElementById('stats-row').style.display = 'none';
 }
+// ── Event listeners (pas de onclick dans le HTML — bloqué par CSP MV3) ──────
+(function attachListeners() {
+  var btnScan   = document.getElementById('btn-scan');
+  var btnImport = document.getElementById('btn-import');
+  var btnLog    = document.getElementById('btn-log');
+  var btnClear  = document.querySelector('[onclick*="clearAll"]') || 
+                  document.querySelector('.btn-danger');
+
+  if (btnScan)   btnScan.addEventListener('click', scan);
+  if (btnImport) btnImport.addEventListener('click', importAll);
+  if (btnLog)    btnLog.addEventListener('click', toggleLog);
+  if (btnClear)  btnClear.addEventListener('click', clearAll);
+
+  // Settings buttons
+  document.querySelectorAll('[title="Paramètres"], [onclick*="openSetup"]').forEach(function(el) {
+    el.removeAttribute('onclick');
+    el.addEventListener('click', openSetup);
+  });
+})();
