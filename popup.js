@@ -63,6 +63,24 @@ function listenMessages() {
       updateStats();
       log(`Page ${msg.page} — ${msg.total} prospect(s) collecté(s)`, 'info');
     }
+
+    if (msg.action === 'prospects_from_page') {
+      // Ajouter les prospects venant d'un bouton cliqué sur la page
+      const incoming = msg.prospects || [];
+      const newOnes = incoming.filter(p => !prospects.some(e =>
+        (e.email && e.email === p.email) ||
+        (e.firstname === p.firstname && e.lastname === p.lastname && p.firstname)
+      ));
+      prospects.push(...newOnes);
+      initStatuses();
+      renderList();
+      updateStats();
+      showFooter();
+      saveCache();
+      log(`✓ ${newOnes.length} prospect(s) ajouté(s) depuis "${msg.source}"`, 'ok');
+      var btnImport = document.getElementById('btn-import');
+      if (btnImport) btnImport.disabled = !settings.hs_token;
+    }
   });
 }
 
